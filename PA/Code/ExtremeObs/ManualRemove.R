@@ -13,7 +13,7 @@ p1 = 6
 # Number of covariates in stage 2: Lon, Lat, lon^2, lat^2, lon*lat, X(s), intercept
 p2 = 7
 
-setwd("/Users/hongjianyang/Research/PA/")
+setwd("/Users/hongjianyang/Research/PAStudy/PA/")
 source('Code/Tools/myFunc.R')
 pa2020 <- read.csv('Data/NC_PA_FRM_PM/PA_2020_hourly_PM_NC.csv')
 epa2020 <- read.csv('Data/NC_PA_FRM_PM/FRM_2020_hourly_PM_NC.csv')
@@ -245,6 +245,4 @@ pa_sub_z <- subset(check, (PM25 <= avg + 3*deviation)
                    & (PM25 >= avg - 3*deviation))
 
 
-
-#### Kriging on 2020-05-05
 
