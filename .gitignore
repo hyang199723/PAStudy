@@ -1,0 +1,7 @@
+# Ignore Data folder
+/PA/Data
+# Ignore .DS_Store
+*/.DS_Store
+# Ignore some custom file
+.DS_Store
+PA/.Rhistory
