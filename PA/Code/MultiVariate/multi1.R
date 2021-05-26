@@ -2,7 +2,7 @@ library(tidyverse)
 library(dplyr)
 library(maps)
 library(spBayes)
-library(viridis)
+library(viridis) 
 
 setwd("/Users/hongjianyang/Research/PAStudy/PA/")
 source('Code/Tools/myFunc.R')
@@ -37,6 +37,13 @@ epa <- epa2020 %>%
   select(col)
 epa <- epa[order(epa$Lon, epa$Lat, epa$Timestamp), ]
 epa$Timestamp <- as.POSIXct(epa$Timestamp, format = '%Y-%m-%d %H:%M:%OS')
+
+write.csv(pa, 'Data/Formatted_PA_FRM/PA_2020_Hourly_Formatted.csv', row.names = FALSE)
+write.csv(epa, 'Data/Formatted_PA_FRM/FRM_2020_Hourly_Formatted.csv', row.names = FALSE)
+
+
+
+
 
 # Get 05/01/2020 - 05/01/2020 data
 
