@@ -3,32 +3,12 @@ library(dplyr)
 library(maps)
 library(spBayes)
 library(viridis)
+library(lubridate)
+rm(list=ls())
 
-setwd("/Users/hongjianyang/Research/PA/")
+setwd("/Users/hongjianyang/Research/PAStudy/PA/")
 source('Code/Tools/myFunc.R')
-pa2020 <- read.csv('Data/NC_PA_FRM_PM/PA_2020_hourly_PM_NC.csv')
-epa2020 <- read.csv('Data/NC_PA_FRM_PM/FRM_2020_hourly_PM_NC.csv')
-# Subset data
-col <- c('Lon', 'Lat', 'Timestamp', 'PM25_corrected')
-pa <- pa2020 %>%
-  select(col) %>%
-  rename(PM25 = PM25_corrected) %>%
-  group_by(Lon, Lat, Timestamp) %>%
-  summarise(PM25 = mean(PM25))
-
-pa <- pa[order(pa$Lon, pa$Lat, pa$Timestamp), ]
-# Remove NAs
-pa <- pa[complete.cases(pa), ]
-
-# Process EPA data
-epa2020$Timestamp <- paste(epa2020$Date_GMT, epa2020$Hour_GMT)
-epa2020$Timestamp <- paste(epa2020$Timestamp, ':00', sep = '')
-col <- c('Lon', 'Lat', 'Timestamp', 'PM25')
-epa <- epa2020 %>% 
-  select(col)
-epa <- epa[order(epa$Lon, epa$Lat, epa$Timestamp), ]
-pa$Timestamp <- as.POSIXct(pa$Timestamp)
-epa$Timestamp <- as.POSIXct(epa$Timestamp, format = '%Y-%m-%d %H:%M:%OS')
+readData()
 
 # Prediction locations
 # Longitude first, then latitude
