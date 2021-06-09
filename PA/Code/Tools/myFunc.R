@@ -155,7 +155,7 @@ LMC <- function(Y,X,s,type,
       # Tuning
       for(j in 1:q){if(att[j]>50 & burn<iter){
         if(acc[j]/att[j]<0.2){MH[j] <- MH[j]*0.8}
-        if(acc[j]/att[j]<0.6){MH[j] <- MH[j]*1.2}
+        if(acc[j]/att[j]>0.6){MH[j] <- MH[j]*1.2}
         acc[j] <- att[j] <- 0
       }}
       
