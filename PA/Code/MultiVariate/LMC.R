@@ -45,7 +45,7 @@ cov.LMC <- function(d,t,theta){
   tau2   <- exp(theta[5])
   sig1   <- exp(theta[6])
   sig2   <- exp(theta[7])
-  S      <- diag(ifelse(type==1,tau1,tau2))
+  S      <- diag(ifelse(t==1,tau1,tau2))
   S[t==1,t==1] <- S[t==1,t==1] + sig1*exp(-d[t==1,t==1]/range1) +   
                                  sig2*rho*rho*exp(-d[t==1,t==1]/range2)
   S[t==1,t==2] <- S[t==1,t==2] + sig2*rho*exp(-d[t==1,t==2]/range2)
@@ -142,7 +142,7 @@ LMC <- function(Y,X,s,type,
       # Tuning
       for(j in 1:q){if(att[j]>50 & burn<iter){
          if(acc[j]/att[j]<0.2){MH[j] <- MH[j]*0.8}
-         if(acc[j]/att[j]<0.6){MH[j] <- MH[j]*1.2}
+         if(acc[j]/att[j]>0.6){MH[j] <- MH[j]*1.2}
          acc[j] <- att[j] <- 0
       }}
 
