@@ -46,6 +46,7 @@ readData <- function() {
   epa <- read.csv('Data/Formatted_PA_FRM/FRM_2020_Hourly_Formatted.csv')
   pa$Timestamp <- force_tz(as.POSIXct(pa$Timestamp), 'UTC')
   epa$Timestamp <- force_tz(as.POSIXct(epa$Timestamp), 'UTC')
+  return(pa, epa)
 }
 
 
@@ -192,5 +193,84 @@ LMC <- function(Y,X,s,type,
   out <- list(beta=keep_beta,theta=keep_theta,
               acc_rate=acc/att,time=tock-tick)
   return(out)}
+
+
+
+# Do prediction at locations.
+# theta: fitted theta_hat from LMC
+# s: training locations
+# s0: prediction locations
+# x: training covaraites
+# x0: prediction covariates
+# type: training type (this should be the same as cov.LMC type)
+# beta: fitted beta_hat from LMC
+# y: True values at training locations
+# Return: n * 1 predictted value, where n = nrow(s0)
+LMCpredict <- function(theta, s, s0, x, x0, type, beta, y) {
+  d <- as.matrix(dist(s))
+  sigma1_inv <- cov.LMC(d, type, theta)$Sinv
+  
+  # Construct sigma0
+  rho    <- theta[1]
+  range1 <- exp(theta[2])
+  range2 <- exp(theta[3])
+  tau1   <- exp(theta[4])
+  tau2   <- exp(theta[5])
+  sig1   <- exp(theta[6])
+  sig2   <- exp(theta[7])
+  
+  s1 <- rbind(s0, s)
+  # distance matrix between s0 and s
+  dist <- as.matrix(dist(s1))
+  rownames(dist) <- NULL
+  
+  d <- as.matrix(dist[1:nrow(s0), (nrow(s0)+1):ncol(dist)])
+  if (nrow(s0) == 1) {d <- t(d)}
+  
+  S      <- matrix(0,nrow = nrow(s0), ncol = ncol(d))
+  S[,type==1] <- sig1*exp(-d[,type==1]/range1) +   
+    sig2*rho*rho*exp(-d[,type==1]/range2)
+  S[,type==2] <- sig2*rho*exp(-d[,type==2]/range2)
+  sigma0 <- S
+  
+  y_hat <- x0%*%beta + sigma0 %*% sigma1_inv %*% (y - x %*% beta)
+  return(y_hat)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

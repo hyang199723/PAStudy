@@ -8,7 +8,8 @@ rm(list=ls())
 
 setwd("/Users/hongjianyang/Research/PAStudy/PA/")
 source('Code/Tools/myFunc.R')
-readData()
+pa <- readData()[1]
+epa <- readData()[2]
 
 # Prediction locations
 # Longitude first, then latitude
@@ -46,8 +47,8 @@ X <- locOpe(X[, 1], X[, 2])
 # \beta_{4}*Lat^2 + \beta_{5}*LonLat
 Y <- pa$PM25
 
-n.samples <- 25000
-burn      <- 5000
+n.samples <- 5000
+burn      <- 1000
 
 starting  <- list("phi"=1/(0.05*maxd), "sigma.sq"=0.5*var(Y), "tau.sq"=0.5*var(Y))
 tuning    <- list("phi"=1, "sigma.sq"=0.05*var(Y), "tau.sq"=0.05*var(Y))

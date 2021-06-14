@@ -66,8 +66,8 @@ diff <- endTime - startTime
 
 n_timestamp <- diff / 3600 + 1
 
-n.samples <- 25000
-burn      <- 5000
+n.samples <- 5000
+burn      <- 1000
 perform <- data.frame()
 for (i in 0:(n_timestamp - 1)) {
   current <- as.POSIXct(3600 * i, origin = start)
@@ -177,7 +177,7 @@ for (i in 0:(n_timestamp - 1)) {
 #beta <- spRecover(fit_spbayes_stage2, start=burn, verbose=FALSE)$p.beta.recover.samples
 #apply(beta, 2, mean)
 
-perform <- read.csv('perform.csv')
+
 perform$Timestamp <- as.POSIXct(perform$Timestamp)
 perform$Lon <- round(perform$Lon, digits = 3)
 # -82.58440, -80.85147, -80.34200, -78.81970
@@ -206,7 +206,7 @@ ggplot(data = ashe, aes(x = Timestamp, y = bias)) +
 
 # Coverage probability, asheville
 asheCov <- ashe[ashe$Z == 1000, ]
-sum(asheCov$Cov) / nrow(asheCov) # 0.88, z = 1000
+sum(asheCov$Cov, na.rm = TRUE) / nrow(asheCov) # 0.88, z = 1000
 asheCov <- ashe[ashe$Z == 5, ]
 sum(asheCov$Cov) / nrow(asheCov) # 0.888, z = 5
 asheCov <- ashe[ashe$Z == 4, ]

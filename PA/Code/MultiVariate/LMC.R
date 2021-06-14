@@ -68,7 +68,7 @@ LMC <- function(Y,X,s,type,
                 mean_range=0,sd_range=1,
                 mean_var=0,sd_var=1,
                 mean_rho=0,sd_rho=10,
-                iters=5000,burn=1000,thin=1,update=10){
+                iters=1000,burn=1000,thin=1,update=10){
 
    library(fields) 
    library(geoR)
@@ -181,6 +181,50 @@ LMC <- function(Y,X,s,type,
 return(out)}
 
 
+
+# Do prediction at locations.
+# theta: fitted theta_hat from LMC
+# s: training locations
+# s0: prediction locations
+# x: training covaraites
+# x0: prediction covariates
+# type: training type (this should be the same as cov.LMC type)
+# beta: fitted beta_hat from LMC
+# y: True value for training locations
+# Return: n * 1 predictted value, where n = nrow(s0)
+LMCpredict <- function(theta, s, s0, x, x0, type, beta, y) {
+  d <- as.matrix(dist(s))
+  sigma1_inv <- cov.LMC(d, type, theta)$Sinv
+  
+  # Construct sigma0
+  rho    <- theta[1]
+  range1 <- exp(theta[2])
+  range2 <- exp(theta[3])
+  tau1   <- exp(theta[4])
+  tau2   <- exp(theta[5])
+  sig1   <- exp(theta[6])
+  sig2   <- exp(theta[7])
+  
+  s1 <- rbind(s0, s)
+  # distance matrix between s0 and s
+  dist <- as.matrix(dist(s1))
+  rownames(dist) <- NULL
+  d <- as.matrix(dist[1:nrow(s0), (nrow(s0)+1):ncol(dist)])
+  
+  S      <- matrix(0,nrow = nrow(s0), ncol = ncol(d))
+  S[,type==1] <- sig1*exp(-d[,type==1]/range1) +   
+    sig2*rho*rho*exp(-d[,type==1]/range2)
+  S[,type==2] <- sig2*rho*exp(-d[,type==2]/range2)
+  sigma0 <- S
+  
+  y_hat <- x0%*%beta + sigma0 %*% sigma1_inv %*% (y - x %*% beta)
+  return(y_hat)
+}
+
+
+
+
+
 # Generate a fake dataset
 
  n      <- 250
@@ -206,19 +250,6 @@ return(out)}
  
  fit    <- LMC(Y,X,s,type)
 
-# Plot the results
-
- par(mfrow=c(3,3))
- for(j in 1:2){
-   plot(fit$beta[,j],type="l",
-        xlab="MCMC iteration",ylab="Sample",
-        main=colnames(fit$beta)[j])
-   abline(beta[j],0,col=2,lwd=2) 
- }
- for(j in 1:length(theta)){
-   plot(fit$theta[,j],type="l",
-        xlab="MCMC iteration",ylab="Sample",
-        main=colnames(fit$theta)[j])
-   abline(theta[j],0,col=2,lwd=2) 
- }
+# Validate Prediction
+ hat <- LMCpredict(theta, s, s, X, X, type, beta, Y)
 
