@@ -18,7 +18,7 @@ source('Code/Tools/myFunc.R')
 
 # Read both EPA and PA data from Formatted_PA_FRM folder
 # Output: PA, EPA
-pa <- read.csv('Data/Formatted_PA_FRM/PA_2020_hourly_Formatted.csv')
+pa <- read.csv('Data/Formatted_PA_FRM/PA_2020_Hourly_Formatted.csv')
 epa <- read.csv('Data/Formatted_PA_FRM/FRM_2020_Hourly_Formatted.csv')
 pa$Timestamp <- as.POSIXct(pa$Timestamp, format = "%Y-%m-%d %H:%M:%OS")
 epa$Timestamp <- as.POSIXct(epa$Timestamp, format = "%Y-%m-%d %H:%M:%OS")
@@ -48,8 +48,8 @@ epa_train <- subset(epa_train_test, n == 0)
 epa_test <- subset(epa_train_test, n == 1)
 
 # Get a timestamp
-start <- as.POSIXct('2020-05-02 06:00:00')
-end <- as.POSIXct('2020-05-02 06:00:00')
+start <- as.POSIXct('2020-05-01 05:00:00')
+end <- as.POSIXct('2020-05-01 05:00:00')
 
 startTime <- as.numeric(start)
 endTime <- as.numeric(end)
@@ -132,14 +132,38 @@ theta_track <- data.frame(Timestamp = time, rho = rho, logrange1 = logrange1,
 #write.csv(theta_track, 'theta.csv')
 
 
-if (F) {
 
 #### Analyze perform.csv and theta.csv
-perform <- read.csv('perform.csv')
-theta <- read.csv('theta.csv')
+perform <- read.csv('Outputs/MultiVariate/perform.csv')
+theta <- read.csv('Outputs/MultiVariate/theta.csv')
+
+
+# Clean raw perform.csv
+if (F) {
+perform[is.na(perform)] <- 0
+perform$yhat <- 0
+perform$std <- 0
+for (i in 6:(ncol(perform) - 2)) {
+  if (i %% 2 == 0) {
+    perform$yhat <- perform$yhat + perform[, i]
+  } else {
+    perform$std <- perform$std + perform[, i]
+  }
+}
+colKeep <- c('Lon', 'Lat', 'Timestamp', 'y', 'yhat', 'std')
+perform <- select(perform, colKeep)
+perform$Timestamp <- as.POSIXct(as.character(perform$Timestamp))
+start <- as.POSIXct('2020-05-01 00:00:00')
+end <- as.POSIXct('2020-05-07 23:00:00')
+
+perform <- subset(perform, (Timestamp >= start) & (Timestamp <= end) )
+}
 
 # Total coverage probability
-# 0.44
+# 0.89
+perform$lowerBound <- perform$yhat - qnorm(0.975) * perform$std
+perform$upperBound <- perform$yhat + qnorm(0.975) * perform$std
+perform$coverage <- as.numeric((perform$y >= perform$lowerBound) & (perform$y <= perform$upperBound))
 sum(perform$coverage) / nrow(perform)
 # Coverage probability by time
 start <- as.POSIXct('2020-05-01 19:00:00')
@@ -154,26 +178,21 @@ plot(x = as.POSIXct(timeGroup$Timestamp), y = timeGroup$coverage, xlab = 'Time',
 perform$Lon = round(perform$Lon, 3)
 # Coverage probability by location
 ash <- subset(perform, Lon == -82.584)
-sum(ash$coverage) / nrow(ash) #0.4689
+sum(ash$coverage) / nrow(ash) #0.77
 
 lotte <- subset(perform, Lon == -80.851)
-sum(lotte$coverage) / nrow(lotte) #0.33125
+sum(lotte$coverage) / nrow(lotte) #0.9
 
 ws <- subset(perform, Lon == -80.342)
-sum(ws$coverage) / nrow(ws) #0.60
+sum(ws$coverage) / nrow(ws) #0.98
 
 rdu <- subset(perform, Lon == -78.820)
-sum(rdu$coverage) / nrow(rdu) #0.371
+sum(rdu$coverage) / nrow(rdu) #0.89
 
 # Calculate correlation
 theta$var1 <- exp(theta$logsig1) + (theta$rho^2)*exp(theta$logsig2)+ exp(theta$logtau1)
 theta$var2 <- exp(theta$logsig2)+ exp(theta$logtau2)
 theta$corr <- theta$rho * exp(theta$logsig2) * ((sqrt(theta$var1) * sqrt(theta$var2))^(-1))
-
-# Calculate MultiVariate standard deviation
-# Variance of a AQS Site: sigma1 + rho^2 * sigma2 + tau1
-theta$AQSvar <- exp(theta$logsig1) + (theta$rho^2) * exp(theta$logsig2) + exp(theta$logtau1)
-
 
 plot(theta$corr, type = 'b')
 plot(theta$corr[1:24], type = 'b', xlab = 'day1')
@@ -183,4 +202,21 @@ plot(theta$corr[73:96], type = 'b', xlab = 'day4')
 plot(theta$corr[97:120], type = 'b', xlab = 'day5')
 plot(theta$corr[121:144], type = 'b', xlab = 'day6')
 plot(theta$corr[145:168], type = 'b', xlab = 'day7')
-}
+
+
+plot(theta$corr[5:28], type = 'b', xlab = 'day1')
+plot(theta$corr[29:52], type = 'b', xlab = 'day2')
+plot(theta$corr[53:76], type = 'b', xlab = 'day3')
+plot(theta$corr[77:100], type = 'b', xlab = 'day4')
+plot(theta$corr[101:124], type = 'b', xlab = 'day5')
+plot(theta$corr[121:144], type = 'b', xlab = 'day6')
+plot(theta$corr[145:168], type = 'b', xlab = 'day7')
+
+
+
+## Look at the posterior distribution of correlation
+fitted_theta <- data.frame(fit$theta[4000:5000, ], check.names = T)
+fitted_theta$var1 <- exp(fitted_theta$log.sig1) + (fitted_theta$rho^2)*exp(fitted_theta$log.sig2)+ exp(fitted_theta$log.tau1)
+fitted_theta$var2 <- exp(fitted_theta$log.sig2)+ exp(fitted_theta$log.tau2)
+fitted_theta$corr <- fitted_theta$rho * exp(fitted_theta$log.sig2) * ((sqrt(fitted_theta$var1) * sqrt(fitted_theta$var2))^(-1))
+hist(fitted_theta$corr)

@@ -42,7 +42,7 @@ getMonthTime <- function() {
 # Read both 2020 EPA and PA data from Formatted_PA_FRM folder
 readData <- function() {
   library(lubridate)
-  pa <- read.csv('Data/Formatted_PA_FRM/PA_2020_hourly_Formatted.csv')
+  pa <- read.csv('Data/Formatted_PA_FRM/PA_2020_Hourly_Formatted.csv')
   epa <- read.csv('Data/Formatted_PA_FRM/FRM_2020_Hourly_Formatted.csv')
   pa$Timestamp <- force_tz(as.POSIXct(pa$Timestamp), 'UTC')
   epa$Timestamp <- force_tz(as.POSIXct(epa$Timestamp), 'UTC')
