@@ -1,3 +1,9 @@
+rm(list=ls())
+
+# Update 06/21/2021: Change critical value to 1000000 only so that no pa station is removed
+# Output to /TwoStage/perform.csv to prepare for comparison of MSE to multivariate analysis
+# coordiantes have been normalized before splitting to prevent shift during normalization
+
 library(tidyverse)
 library(dplyr)
 library(maps)
@@ -6,8 +12,6 @@ library(viridis)
 
 
 ## Global variables
-# 80% of EPA stations were used during training
-trainPercent = 0.8
 # Number of covariates in stage 1: Lon, Lat, lon^2, lat^2, lon*lat, intercept
 p1 = 6
 # Number of covariates in stage 2: Lon, Lat, lon^2, lat^2, lon*lat, X(s), intercept
@@ -23,7 +27,6 @@ epa$Timestamp <- as.POSIXct(epa$Timestamp, format = "%Y-%m-%d %H:%M:%OS")
 
 
 # Get 05/01/2020 - 05/07/2020 data
-
 start <- as.POSIXct('2020-05-01 00:00:00')
 end <- as.POSIXct('2020-05-07 23:00:00')
 pa <- subset(pa, Timestamp >= start & Timestamp <= end)
@@ -44,6 +47,14 @@ epa <- subset(epa, Timestamp >= start & Timestamp <= end)
 #     (the same as epa_s0 from 1)
 # test_X0: covariate matrix for 20% EPA stations *
 # test_s0: 20% EPA stations to be predicted on *
+
+# Normalize PA and EPA coordinates in one set, and split
+full <- rbind(pa, epa)
+full$LonNorm <- colNorm(full$Lon)
+full$LatNorm <- colNorm(full$Lat)
+split <- append(rep(1, nrow(pa)),rep(2, nrow(epa)))
+pa <- subset(full, split == 1)
+epa <- subset(full, split == 2)
 
 # Train-test split for EPA stations
 rownames(epa) <- NULL
@@ -76,7 +87,9 @@ for (i in 0:(n_timestamp - 1)) {
   if (dim(epa_test_sub)[1] == 0) next
   pa_sub <- subset(pa, Timestamp == current)
   
-  z <- c(1000, 5,4,3,2,1)
+  # critical value to control outlier in z-test
+  # Only need 100000 if nothing needs to be removed
+  z <- c(100000,5,2)
   avg = mean(pa_sub$PM25)
   deviation = sd(pa_sub$PM25)
   print(i/n_timestamp)
@@ -88,8 +101,7 @@ for (i in 0:(n_timestamp - 1)) {
     S <- data.matrix(pa_sub_z[, 1:2])
     maxd      <- max(dist(S))
     # Construct locations
-    X <- S
-    X <- dfColNorm(X)
+    X <- pa_sub_z[, c('LonNorm', 'LatNorm')]
     X <- locOpe(X[, 1], X[, 2])
     
     # Model: Y = \beta_{0} + \beta_{1}*Lon + \beta_{2}*Lat + \beta_{3}*Lon^2 + 
@@ -109,8 +121,7 @@ for (i in 0:(n_timestamp - 1)) {
                          amcmc=amcmc, n.samples=n.samples,verbose=FALSE)
     
     epa_s0 <- data.matrix(epa_train_sub[, 1:2])
-    epa_X0 <- epa_s0
-    epa_X0 <- dfColNorm(epa_X0)
+    epa_X0 <- epa_train_sub[, c('LonNorm', 'LatNorm')]
     epa_X0 <- locOpe(epa_X0[, 1], epa_X0[, 2])
     
     # Predict at training locations
@@ -120,12 +131,10 @@ for (i in 0:(n_timestamp - 1)) {
     epa_train_hat <- apply(pred_epa,1,mean)
     
     # Predict at testing locations
-    lon <- epa_test_sub[, 1]
-    lat <- epa_test_sub[, 2]
-    test_s0 <- cbind(lon, lat)
-    lon <- colNorm(lon)
-    lat <- colNorm(lat)
-    test_X0 <- locOpe(lon, lat)
+    
+    test_s0 <- epa_test_sub[, c('Lon', 'Lat')]
+    x0 <- epa_test_sub[, c('LonNorm', 'LatNorm')]
+    test_X0 <- locOpe(x0[, 1], x0[, 2])
     pred_test <- spPredict(fit_spbayes, pred.coords=test_s0, pred.covars=test_X0, 
                            start=burn, thin=10, verbose=FALSE)
     pred_test <- pred_test$p.y.predictive.samples
@@ -167,12 +176,18 @@ for (i in 0:(n_timestamp - 1)) {
     subRec$MSE <- MSE
     subRec$Cov <- as.numeric((Y >= Yhat-1.96*std) & (Y <= Yhat+1.96*std))
     subRec$Z <- j
+    # Perform is the df that saves all info about bias, std, MSE
     perform <- rbind(perform, subRec)
   }
 }
 
+# Save perform to perform.csv
+write.csv(perform, 'Outputs/TwoStage/perform.csv')
 
+##### Below are codes to examine outputs from codes above
+# Comment out if needed
 
+if (F) {
 
 #beta <- spRecover(fit_spbayes_stage2, start=burn, verbose=FALSE)$p.beta.recover.samples
 #apply(beta, 2, mean)
@@ -226,5 +241,5 @@ deviation = sd(check$PM25)
 pa_sub_z <- subset(check, (PM25 <= avg + 3*deviation) 
                    & (PM25 >= avg - 3*deviation))
 
-
+}
 
