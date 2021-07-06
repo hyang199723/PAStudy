@@ -5,30 +5,14 @@ library(lubridate)
 rm(list=ls())
 
 setwd("/Users/hongjianyang/Research/PAStudy/PA/")
-source('Code/Tools/myFunc.R')
-load('Data/Raw/PA2020_Raw1-50.Rdata')
-a <- raw_data_full
-load('Data/Raw/PA2020_Raw50-250.Rdata')
-b <- raw_data_full
-load('Data/Raw/PA2020_Raw250-400.Rdata')
-c <- raw_data_full
-load('Data/Raw/PA2020_Raw400-437.Rdata')
-d <- raw_data_full
-
-df <- rbind(a,b,c,d)
-df1 <- df[order(df$CreatedAt),]
-start <- as.POSIXct('2020-01-11 00:00:00')
-end <- as.POSIXct('2020-01-11 23:00:00')
-
-df2 <- subset(df1, (CreatedAt >= start & CreatedAt <= end))
-df3 <- subset(pa2020, (Timestamp >= start & Timestamp <= end))
 
 pa2020 <- read.csv('Data/Formatted_PA_FRM/PA_2020_Hourly_Formatted.csv')
-pa2020$Timestamp <- as.POSIXct(as.character(pa2020$Timestamp))
+pa2020$Timestamp <- as.POSIXct(pa2020$Timestamp, format = "%Y-%m-%d %H:%M:%OS")
 epa2020 <- read.csv('Data/Formatted_PA_FRM/FRM_2020_Hourly_Formatted.csv')
 
 # Pivot PA data
 pa <- pivot_wider(pa2020, names_from = c(Lon, Lat), values_from = PM25)
+pa <- 
 
 # Get Missing Percentage
 missing <- colSums(is.na(pa)) / nrow(pa)
@@ -57,9 +41,6 @@ for(i in 1:11) {
   print(dim(pa))
 }
 
-
-##### Load Original PA data
-old_pa <- read.csv('Data/Old/sensors.csv')
 
 
 
