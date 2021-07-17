@@ -5,15 +5,16 @@ library(lubridate)
 rm(list=ls())
 
 setwd("/Users/hongjianyang/Research/PAStudy/PA/")
+source('Code/Tools/myFunc.R')
 
 pa2020 <- read.csv('Data/Formatted_PA_FRM/PA_2020_Hourly_Formatted.csv')
-pa2020$Timestamp <- as.POSIXct(pa2020$Timestamp, format = "%Y-%m-%d %H:%M:%OS")
+pa2020$Timestamp <- as.POSIXct(as.character(pa2020$Timestamp), format = "%Y-%m-%d %H:%M:%OS")
 epa2020 <- read.csv('Data/Formatted_PA_FRM/FRM_2020_Hourly_Formatted.csv')
+epa2020$Timestamp <- as.POSIXct(as.character(epa2020$Timestamp), format = "%Y-%m-%d %H:%M:%OS")
 
-# Pivot PA data
-pa <- pivot_wider(pa2020, names_from = c(Lon, Lat), values_from = PM25)
-pa <- 
 
+
+if(FALSE) { # Useless when not looking at missing percentage
 # Get Missing Percentage
 missing <- colSums(is.na(pa)) / nrow(pa)
 hist(missing, main = '2020 Missing Hist')
@@ -41,14 +42,7 @@ for(i in 1:11) {
   print(dim(pa))
 }
 
-
-
-
-
-
-
-
-
+}
 
 
 
