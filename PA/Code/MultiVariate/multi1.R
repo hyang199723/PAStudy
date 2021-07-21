@@ -220,3 +220,41 @@ fitted_theta$var1 <- exp(fitted_theta$log.sig1) + (fitted_theta$rho^2)*exp(fitte
 fitted_theta$var2 <- exp(fitted_theta$log.sig2)+ exp(fitted_theta$log.tau2)
 fitted_theta$corr <- fitted_theta$rho * exp(fitted_theta$log.sig2) * ((sqrt(fitted_theta$var1) * sqrt(fitted_theta$var2))^(-1))
 hist(fitted_theta$corr)
+
+
+
+
+
+
+
+
+insight <- function(n) {
+  delta <- rnorm(n, mean = 10, sd = 5)
+  trans <- fft(delta)
+  real <- Re(trans)
+  print(mean(real))
+  print(sd(real))
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
