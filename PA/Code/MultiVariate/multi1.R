@@ -223,25 +223,62 @@ hist(fitted_theta$corr)
 
 
 
+rm(list=ls())
+n <- c(10, 100, 1000, 10000, 100000, 1e6)
+variance <- c()
+exp <- c()
+
+fft_real <- function(dat,inverse=FALSE){
+  if(!inverse){
+    x  <- dat
+    n  <- length(x)
+    n2 <- floor(n/2)
+    y  <- fft(x,inverse=FALSE)
+    if(n%%2==0){
+      X1     <- Re(y)[1:(n2+1)]
+      X2     <- Im(y)[2:(n2)]
+    }
+    if(n%%2!=0){
+      X1     <- Re(y)[1:(n2+1)]
+      X2     <- Im(y)[2:(n2+1)]
+    }
+    out <- c(X1,X2)
+  }
+  if(inverse){
+    X  <- dat
+    n  <- length(X)
+    n2 <- floor(n/2)
+    if(n%%2==0){
+      Y1    <- c(X[1:(n2+1)],X[n2:2])
+      Y2    <- c(0,X[(n2+2):n],0,-X[n:(n2+2)])
+    }
+    if(n%%2!=0){
+      Y1    <- c(X[1:(n2+1)],X[(n2+1):2])
+      Y2    <- c(0,X[(n2+2):n],-X[n:(n2+2)])
+    }
+    y   <- complex(n, real = Y1, imaginary = Y2)
+    out <- Re(fft(y/n,inverse=TRUE))
+  }
+  return(out)}
 
 
-
-
-
-insight <- function(n) {
-  delta <- rnorm(n, mean = 10, sd = 5)
-  trans <- fft(delta)
-  real <- Re(trans)
-  print(mean(real))
-  print(sd(real))
+sim <- function(n) {
+  delta <- rnorm(n, mean = 0, sd = 5)
+  trans <- fft_real(delta)
+  return(sd(trans)^2)
 }
 
+for (i in n) {
+  v <- sim(i)
+  variance <- append(variance, v)
+  exp <- append(exp, i/2 * 25)
+}
+
+plot(x = n, y = log(variance), 'l')
+lines(n, log(exp), col="green")
 
 
-
-
-
-
+relD <- function(x,y) 2* abs(x - y) / abs(x + y)
 
 
 

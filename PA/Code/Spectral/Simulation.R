@@ -1,6 +1,8 @@
 # Function to compute the MV spatial covariance matrix
+# d is the distance matrix between coordinates
+# type: t[i] = 1 means AQS; t[i] = 2 mean PA
+# theta: parameters
 cov.LMC <- function(d,t,theta){
-  # t[i] = 1 means AQS; t[i] = 2 mean PA
   rho    <- theta[1]
   range1 <- exp(theta[2])
   range2 <- exp(theta[3])
