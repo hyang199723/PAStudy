@@ -1,4 +1,3 @@
-# Model Simulation 
 
 library(tidyverse)
 library(spBayes)
@@ -16,8 +15,8 @@ tau2=1.5  # error variance2
 # correlation parameters
 sigma1=1 
 sigma2=4
-range1=exp(0.1)
-range2=exp(0.3)
+rangeu=exp(0.1)
+rangev=exp(0.3)
 
 # simulate coordinates
 set.seed(22)
@@ -34,35 +33,23 @@ exp_corr=function(d,range)
   return(out)
 }
 
-# Definitions of matrix A, T and R
-a=2
-A <- matrix(0,q,q) 
-A[1,1]=1
-A[2,1]=0
-A[2,2]=1
 
-TT <- A%*%t(A)
-T1=A[,1]%*%t(A[,1])
-T2=A[,2]%*%t(A[,2])
-#T1+T2==TT check
-d=as.matrix(dist(coords))
-R1=sigma1*apply(d,2,exp_corr,range=range1)
-R2=sigma2*apply(d,2,exp_corr,range=range2)
-RT1=kronecker(R1, T1)
-RT2=kronecker(R2, T2)
-R=RT1+RT2
 
-# simulate Gaussian process
-W=mvrnorm(n = 1, rep(0,80), R)
-u1=W[c(1:n[1])]
-u2=W[c((2*n[1]+1):((2*n[1])+n[2]))]
-v2=W[c((2*n[1]+n[2]+1):length(W))]
+### 
+du1=as.matrix(dist(coords1))
+Sigmau11=sigma1*apply(du1,2,exp_corr,range=rangeu)
+
+du2=as.matrix(dist(coords2))
+Sigmau22=sigma1*apply(du2,2,exp_corr,range=rangeu)
+
+dv2=as.matrix(dist(coords2))
+Sigmav22=sigma1*apply(dv2,2,exp_corr,range=rangev)
+
+u1=mvrnorm(n = 1, rep(0,n[1]), Sigmau11)
+u2=mvrnorm(n = 1, rep(0,n[2]), Sigmau22)
+v2=mvrnorm(n = 1, rep(0,n[2]), Sigmav22)
 
 # simulate response Y
 Y1=u1+rnorm(n[1],tau1)
 Y2=u2+v2+rnorm(n[2],tau2)
-
-## to get the time series I should vary sigma1 sigma2 and a and loop. 
-
-
 
