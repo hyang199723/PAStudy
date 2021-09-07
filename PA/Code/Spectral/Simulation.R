@@ -97,7 +97,7 @@ S2 <- S22 - S21 %*% solve(S11) %*% S12
 A2 <- S21 %*% solve(S11)
 S2inv <- solve(S2)
 
-SigmaU2 <- solve(1/tau2 * diag(1, n2) + 1/sig1 * S2inv)
+SigmaU2 <- solve(rho^2/tau2 * diag(1, n2) + 1/sig1 * S2inv)
 meanU2 <- SigmaU2 %*% (1/tau2 * rho * Y2 - rho * V2 + 1/sig1 * S2inv %*% A2 %*% U1)
 
 U2_sim <- as.vector(t(chol(SigmaU2)) %*% rnorm(n2)) + meanU2
@@ -105,7 +105,7 @@ hist(U2_sim)
 
 # Simulation for V2:
 set.seed(123)
-SigmaV2 <- solve(solve(S22) + 1/tau2 * diag(1, n2))
+SigmaV2 <- solve(1/sig2 * solve(S22) + 1/tau2 * diag(1, n2))
 meanV2 <- SigmaV2 %*% (1/tau2 * Y2)
 
 V2_sim <- as.vector(t(chol(SigmaV2)) %*% rnorm(n2)) + meanV2
