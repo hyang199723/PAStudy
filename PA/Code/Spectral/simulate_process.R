@@ -47,9 +47,12 @@ Sigmau22=sigma1*apply(du2,2,exp_corr,range=rangeu)
 dv2=as.matrix(dist(coords2))
 Sigmav22=sigma1*apply(dv2,2,exp_corr,range=rangev)
 
-u1=mvrnorm(n = 1, rep(0,n[1]), Sigmau11)
-u2=mvrnorm(n = 1, rep(0,n[2]), Sigmau22)
-v2=mvrnorm(n = 1, rep(0,n[2]), Sigmav22)
+#u1=mvrnorm(n = 1, rep(0,n[1]), Sigmau11)
+u1 = as.vector(t(chol(Sigmau11)) %*% rnorm(n[1]))
+#u2=mvrnorm(n = 1, rep(0,n[2]), Sigmau22)
+u2 = as.vector(t(chol(Sigmau22)) %*% rnorm(n[2]))
+#v2=mvrnorm(n = 1, rep(0,n[2]), Sigmav22)
+v2 = as.vector(t(chol(Sigmav22)) %*% rnorm(n[2]))
 
 # simulate response Y
 Y1=u1+rnorm(n[1],tau1)
