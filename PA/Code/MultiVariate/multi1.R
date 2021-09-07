@@ -277,7 +277,6 @@ for (i in n) {
 plot(x = n, y = log(variance), 'l')
 lines(n, log(exp), col="green")
 
-
 relD <- function(x,y) 2* abs(x - y) / abs(x + y)
 
 
