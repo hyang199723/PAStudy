@@ -1,4 +1,6 @@
 
+#### simulation of the process (just for one time of frequency)
+
 library(tidyverse)
 library(spBayes)
 library(ggplot2)
@@ -52,4 +54,18 @@ v2=mvrnorm(n = 1, rep(0,n[2]), Sigmav22)
 # simulate response Y
 Y1=u1+rnorm(n[1],tau1)
 Y2=u2+v2+rnorm(n[2],tau2)
+
+# set data frame 
+type=c(rep('1',n[1]),rep('2',n[2]))
+Y=c(Y1,Y2)
+U=c(u1,u2)
+V=c(rep(NA,n[1]),v2)
+s1=c(coords1[,1],coords2[,1])
+s2=c(coords1[,2],coords2[,2])
+
+data=data.frame(type,Y,U,V,s1,s2)
+
+# plot data
+ggplot(data)+geom_point(aes(x=s1,y=s2,col=Y))+facet_grid(~type)+theme_bw()+ coord_fixed(ratio = 1)
+
 
