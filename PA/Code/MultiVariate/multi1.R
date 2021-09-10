@@ -49,7 +49,7 @@ epa_test <- subset(epa_train_test, n == 1)
 
 # Get a timestamp
 start <- as.POSIXct('2020-05-01 05:00:00')
-end <- as.POSIXct('2020-05-01 05:00:00')
+end <- as.POSIXct('2020-05-02 05:00:00')
 
 startTime <- as.numeric(start)
 endTime <- as.numeric(end)
