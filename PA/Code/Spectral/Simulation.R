@@ -12,12 +12,13 @@ library(invgamma)
 # theta: parameters
 covU <- function(d,t,theta) {
   range1 <- exp(theta[2])
+  range2 <- exp(theta[3])
   sig1   <- exp(theta[6])
   S <- diag(0, length(t))
   S[t==1,t==1] <- sig1*exp(-d[t==1,t==1]/range1)
   S[t==1,t==2] <- sig1*exp(-d[t==1,t==2]/range1)
   S[t==2,t==1] <- sig1*exp(-d[t==2,t==1]/range1)
-  S[t==2,t==2] <- sig1*exp(-d[t==2,t==2]/range1)
+  S[t==2,t==2] <- sig1*exp(-d[t==2,t==2]/range2) # Should it be range1 or range2?
   return(S)
 }
 
@@ -34,6 +35,21 @@ covV <- function(d,t,theta) {
   S <- diag(0, length(t))
   S <- sig2*exp(-d/range2)
   return(S)
+}
+
+# Function to compute Sigma11, Sigma12, Sigma21, and Sigma22
+# d: distance matrix between coords
+# t: type, either 1 or 2
+# theta: parameters
+# # theta  <- c(rho,log(range1),log(range2),log(tau1),log(tau2),log(sig1),log(sig2))
+covIndividual <- function(d, t, theta) {
+  range1 <- exp(theta[2])
+  range2 <- exp(theta[3])
+  S <- diag(0, length(t))
+  S[t==1,t==1] <- exp(-d[t==1,t==1]/range1)
+  S[t==1,t==2] <- exp(-d[t==1,t==2]/range1)
+  S[t==2,t==1] <- exp(-d[t==2,t==1]/range1)
+  S[t==2,t==2] <- exp(-d[t==2,t==2]/range1)
 }
 
 ########################################################################
@@ -90,6 +106,13 @@ Y2 <- Al * U2 + V2 + as.vector(rnorm(n2, mean = 0, sd = sqrt(tau2)))
 ########################################################################
 ##########  Recover parameters with full conditionals defined
 ########################################################################
+
+# Simulation for U1: 
+S1 <- S11 - S12 %*% solve(S22) %*% S21
+sigmaU1 <- solve(1/tau1 * diag(1, n1) + 1/sig1 * S1inv)
+
+
+
 
 #######################Codes below are old codes that need update
 # Simulation for U1: 
