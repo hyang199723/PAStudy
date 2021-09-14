@@ -7,26 +7,29 @@ library(ggplot2)
 library(mgcv)
 library(MASS)
 
-# set some parameters
-n=c(25,15) # number of locations
+                      ###### set some parameters ########
 
+n=c(300,150) # number of locations
 
-tau1=1 # error variance1
-tau2=1.5  # error variance2
+tau1=1^2 # error variance1
+tau2=(1.5)^2  # error variance2
+al=0.8
 
 # correlation parameters
-sigma1=1 
-sigma2=4
-rangeu=exp(0.1)
-rangev=exp(0.3)
+sigmau=3^2
+sigmav=2^2
+rangeu=0.4
+rangev=0.3
 
-# simulate coordinates
+
+                    ###### simulate coordinates #######
+
 set.seed(22)
 coords1 = cbind(runif(n[1],0,1), runif(n[1],0,1))
 coords2 = cbind(runif(n[2],0,1), runif(n[2],0,1))
 coords=rbind(coords1,coords2)
 
-# Get U and V
+                     ######## Get U and V ##########
 
 # correlation function
 exp_corr=function(d,range)
@@ -35,30 +38,24 @@ exp_corr=function(d,range)
   return(out)
 }
 
+du12=as.matrix(dist(coords)) #distance matrix U
 
+M=exp_corr(du12,range=rangeu)
+u=t(chol(M))%*%rnorm(sum(n),0,sqrt(sigmau))
+u1=u[1:n[1]]
+u2=u[(n[1]+1):(sum(n))]
 
-### 
-du1=as.matrix(dist(coords1))
-Sigmau11=sigma1*apply(du1,2,exp_corr,range=rangeu)
+dv2=as.matrix(dist(coords2)) # distance matrix v
+Sigmav22=exp_corr(dv2,range = rangev)
+v2=t(chol(Sigmav22))%*%rnorm(n[2],0,sqrt(sigmav))
 
-du2=as.matrix(dist(coords2))
-Sigmau22=sigma1*apply(du2,2,exp_corr,range=rangeu)
+                ####### simulate response Y ############
 
-dv2=as.matrix(dist(coords2))
-Sigmav22=sigma1*apply(dv2,2,exp_corr,range=rangev)
+Y1=u1+rnorm(n[1],0,sqrt(tau1))
+Y2=al*u2+v2+rnorm(n[2],0,sqrt(tau2))
 
-u1=mvrnorm(n = 1, rep(0,n[1]), Sigmau11)
-#u1 = as.vector(t(chol(Sigmau11)) %*% rnorm(n[1]))
-u2=mvrnorm(n = 1, rep(0,n[2]), Sigmau22)
-#u2 = as.vector(t(chol(Sigmau22)) %*% rnorm(n[2]))
-v2=mvrnorm(n = 1, rep(0,n[2]), Sigmav22)
-#v2 = as.vector(t(chol(Sigmav22)) %*% rnorm(n[2]))
+               ###### set data frame and plot #######
 
-# simulate response Y
-Y1=u1+rnorm(n[1],tau1)
-Y2=u2+v2+rnorm(n[2],tau2)
-
-# set data frame 
 type=c(rep('1',n[1]),rep('2',n[2]))
 Y=c(Y1,Y2)
 U=c(u1,u2)
