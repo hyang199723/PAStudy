@@ -12,7 +12,6 @@ library(invgamma)
 # theta: parameters
 covU <- function(d,t,theta) {
   range1 <- exp(theta[2])
-  range2 <- exp(theta[3])
   sig1   <- exp(theta[6])
   S <- diag(0, length(t))
   S[t==1,t==1] <- sig1*exp(-d[t==1,t==1]/range1)
@@ -44,7 +43,6 @@ covV <- function(d,t,theta) {
 # # theta  <- c(rho,log(range1),log(range2),log(tau1),log(tau2),log(sig1),log(sig2))
 covIndividual <- function(d, t, theta) {
   range1 <- exp(theta[2])
-  range2 <- exp(theta[3])
   S <- diag(0, length(t))
   S[t==1,t==1] <- exp(-d[t==1,t==1]/range1)
   S[t==1,t==2] <- exp(-d[t==1,t==2]/range1)
@@ -54,7 +52,7 @@ covIndividual <- function(d, t, theta) {
   S12 <- S[t==1,t==2]
   S21 <- S[t==2,t==1]
   S22 <- S[t==2,t==2]
-  return(list(S11=S11, S12=S12, S21=S21, S22=S22))
+  return(list(S=S,S11=S11, S12=S12, S21=S21, S22=S22))
 }
 
 ########################################################################
@@ -78,8 +76,8 @@ range1 <- 0.1
 range2 <- 0.3
 tau1   <- 0.1
 tau2   <- 0.3
-set.seed(125); sig1 <- 1#rinvgamma(1, 2, 1) # ~invgamma(2,1)
-set.seed(124); sig2 <- 2#rinvgamma(1, 2, 2) # ~invgamma(2,2)
+set.seed(125); sig1 <- 1
+set.seed(124); sig2 <- 2
 theta  <- c(rho,log(range1),log(range2),
             log(tau1),log(tau2),log(sig1),log(sig2))
 n1 <- sum(type == 1)
@@ -87,23 +85,26 @@ n2 <- sum(type == 2)
 
 # Covariance matrix for U1, U2
 Su <- covU(dist,type,theta)
+Su1 <- covIndividual(dist,type,theta)
 # Covariance matrix for V2
 Sv <- covV(dist,type,theta)
+Sv1 <- Sv/sig2
+
 
 # Generate U1, U2, V2, Al
 # Generate U1, U2
 # The first n1 values are U1, remaining are U2
 set.seed(123)
-U <- as.vector(t(chol(Su)) %*% rnorm(n1 + n2))
+U <- as.vector(t(chol(Su1$S)) %*% rnorm(n1 + n2, mean = 0, sd = sqrt(sig1)))
 U1 <- U[1:n1]
 U2 <- U[n1+1:n2]
 if (length(U1) != n1 | length(U2) != n2) {stop('length do not match')}
+
 # Generate V2
 set.seed(123)
-V2 <- as.vector(t(chol(Sv)) %*% rnorm(n2))
+V2 <- as.vector(t(chol(Sv1)) %*% rnorm(n2, mean = 0, sd = sqrt(sig2)))
 # Generate A_{l}
-set.seed(12)
-Al <- rtruncnorm(1, a=0, b=+Inf, mean=2, sd=2)
+Al <- 0.8
 
 # Generate Y1 and Y2
 set.seed(123)
@@ -131,7 +132,10 @@ for (i in 1:iter) {
 }
 U1_sim <- as.vector(apply(U1_sim_all, 1, mean))
 diff <- (t(U1_sim - U1) %*% (U1_sim - U1)) / (t(U1) %*% U1) # 4% difference
+diff
 angel <- t(U1_sim) %*% U1 / sqrt((t(U1) %*% U1)) / sqrt((t(U1_sim) %*% U1_sim)) # Cos() = 0.9816
+angel
+
 
 # Simulation for U2:
 S2 <- S22 - S21 %*% solve(S11) %*% S12
@@ -148,7 +152,20 @@ for (i in 1:iter) {
 }
 U2_sim <- as.vector(apply(U2_sim_all, 1, mean))
 diff <- (t(U2_sim - U2) %*% (U2_sim - U2)) / (t(U2) %*% U2) # 58% difference
+diff
 angel <- t(U2_sim) %*% U2 / sqrt((t(U2) %*% U2)) / sqrt((t(U2_sim) %*% U2_sim)) # Cos() = 0.5
+angel
+# Look at the trace plot of one station
+station11 <- as.vector(U1_sim_all[11,])
+true11 <- U1[11]
+plot(x = 1:3000, y = station11, 'l')
+abline(h = true11, col = 'red')
+
+# Look at the trace plot of one station
+station11 <- as.vector(U1_sim_all[25,])
+true11 <- U1[25]
+plot(x = 1:3000, y = station11, 'l')
+abline(h = true11, col = 'red')
 
 # Simulation for V2:
 #Sv = sig2 * Sigma_{v22}
@@ -162,27 +179,35 @@ for (i in 1:iter) {
 }
 V2_sim <- as.vector(apply(V2_sim_all, 1, mean))
 diff <- (t(V2_sim - V2) %*% (V2_sim - V2)) / (t(V2) %*% V2) # 0.349 difference
+diff
 angel <- t(V2_sim) %*% V2 / sqrt((t(V2) %*% V2)) / sqrt((t(V2_sim) %*% V2_sim)) # Cos() = 0.95
+angel
 
+# Look at the trace plot of one station
+station11 <- as.vector(V2_sim_all[11,])
+true11 <- V2[11]
+plot(x = 1:3000, y = station11, 'l')
+abline(h = true11, col = 'red')
 
-
-# Simulation for Al; Al ~ TN(2,2); Al = 0.87
-sigmaAl <- solve(1/tau2 * t(U2) %*% U2 + 1/4)
-meanAl <- sigmaAl %*% (1/tau2 + t(Y2) %*% U2 - 1/tau2 * t(V2) %*% U2 + 2/4) # Mean is 0.879
-Al_sim <- rtruncnorm(3000, a=0, b=+Inf, mean=meanAl, sd=sigmaAl)
+# Simulation for Al; Al ~ TN(2,5); Prior Al = 0.8
+sigmaAl <- solve(1/tau2 * t(U2) %*% U2 + 1/5)
+meanAl <- sigmaAl %*% (1/tau2 * t(Y2) %*% U2 - 1/tau2 * t(V2) %*% U2 + 2/5)
+Al_sim <- rtruncnorm(3000, a=0, b=+Inf, mean=meanAl, sd=sqrt(sigmaAl))
 hist(Al_sim)
-mean(Al_sim) # 1.48
 
-# Simulation for sig1; sig1~IG(2,1)
-a <- (n2+n1)/2 + 2
+# Simulation for sig1; sig1~IG(1,1); prior sig1 = 1
+a <- (n2+n1)/2 + 1
 b <- (t(U) %*% solve(Su/sig1) %*% U) / 2 + 1
+sig1_sim <- rinvgamma(3000, a, b)
+mean(sig1_sim)
+
+
+
+# Simulation for sig2; Sig2~IG(1,1); prior sig2 = 2
+a <- n2/2 + 1
+b <- (t(V2) %*% solve(Sv/sig2) %*% V2) / 2 + 1
 sig2_sim <- rinvgamma(3000, a, b)
-a/(b-1) # 1.149
-
-
-# Simulation for sig2; Sig2~IG(2,2)
-a <- n2/2 + 2
-b <- (t(V2) %*% solve(Sv/sig2) %*% V2) / 2 + 2
+mean(sig2_sim)
 # Mean = 3.14
 
 
