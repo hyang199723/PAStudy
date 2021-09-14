@@ -136,6 +136,34 @@ diff
 angel <- t(U1_sim) %*% U1 / sqrt((t(U1) %*% U1)) / sqrt((t(U1_sim) %*% U1_sim)) # Cos() = 0.9816
 angel
 
+# Look at the trace plot of one station
+station11 <- as.vector(U1_sim_all[11,])
+true11 <- U1[11]
+plot(x = 1:3000, y = station11, 'l',main = 'U1, station11')
+abline(h = true11, col = 'red')
+
+
+# Look at the trace plot of one station
+station25 <- as.vector(U1_sim_all[25,])
+true25 <- U1[25]
+plot(x = 1:3000, y = station25, 'l', main = 'U1, station25')
+abline(h = true25, col = 'red')
+
+# Look at the trace plot of one station
+station34 <- as.vector(U1_sim_all[34,])
+true34 <- U1[34]
+plot(x = 1:3000, y = station34, 'l', main = 'U1, station34')
+abline(h = true34, col = 'red')
+
+# Look at the trace plot of one station
+station60 <- as.vector(U1_sim_all[60,])
+true60 <- U1[60]
+plot(x = 1:3000, y = station60, 'l' , main = 'U1, station60')
+abline(h = true60, col = 'red')
+
+
+
+
 
 # Simulation for U2:
 S2 <- S22 - S21 %*% solve(S11) %*% S12
@@ -155,17 +183,31 @@ diff <- (t(U2_sim - U2) %*% (U2_sim - U2)) / (t(U2) %*% U2) # 58% difference
 diff
 angel <- t(U2_sim) %*% U2 / sqrt((t(U2) %*% U2)) / sqrt((t(U2_sim) %*% U2_sim)) # Cos() = 0.5
 angel
-# Look at the trace plot of one station
-station11 <- as.vector(U1_sim_all[11,])
-true11 <- U1[11]
-plot(x = 1:3000, y = station11, 'l')
-abline(h = true11, col = 'red')
 
 # Look at the trace plot of one station
-station11 <- as.vector(U1_sim_all[25,])
-true11 <- U1[25]
-plot(x = 1:3000, y = station11, 'l')
+station11 <- as.vector(U2_sim_all[11,])
+true11 <- U2[11]
+plot(x = 1:3000, y = station11, 'l',main = 'U2, station11')
 abline(h = true11, col = 'red')
+
+
+# Look at the trace plot of one station
+station25 <- as.vector(U2_sim_all[25,])
+true25 <- U2[25]
+plot(x = 1:3000, y = station25, 'l', main = 'U2, station25')
+abline(h = true25, col = 'red')
+
+# Look at the trace plot of one station
+station34 <- as.vector(U2_sim_all[34,])
+true34 <- U2[34]
+plot(x = 1:3000, y = station34, 'l', main = 'U2, station34')
+abline(h = true34, col = 'red')
+
+# Look at the trace plot of one station
+station60 <- as.vector(U2_sim_all[60,])
+true60 <- U2[60]
+plot(x = 1:3000, y = station60, 'l' , main = 'U2, station60')
+abline(h = true60, col = 'red')
 
 # Simulation for V2:
 #Sv = sig2 * Sigma_{v22}
@@ -186,8 +228,27 @@ angel
 # Look at the trace plot of one station
 station11 <- as.vector(V2_sim_all[11,])
 true11 <- V2[11]
-plot(x = 1:3000, y = station11, 'l')
+plot(x = 1:3000, y = station11, 'l',main = 'V2, station11')
 abline(h = true11, col = 'red')
+
+
+# Look at the trace plot of one station
+station25 <- as.vector(V2_sim_all[25,])
+true25 <- V2[25]
+plot(x = 1:3000, y = station25, 'l', main = 'V2, station25')
+abline(h = true25, col = 'red')
+
+# Look at the trace plot of one station
+station34 <- as.vector(V2_sim_all[34,])
+true34 <- V2[34]
+plot(x = 1:3000, y = station34, 'l', main = 'V2, station34')
+abline(h = true34, col = 'red')
+
+# Look at the trace plot of one station
+station60 <- as.vector(V2_sim_all[60,])
+true60 <- V2[60]
+plot(x = 1:3000, y = station60, 'l' , main = 'V2, station60')
+abline(h = true60, col = 'red')
 
 # Simulation for Al; Al ~ TN(2,5); Prior Al = 0.8
 sigmaAl <- solve(1/tau2 * t(U2) %*% U2 + 1/5)
@@ -199,19 +260,16 @@ hist(Al_sim)
 a <- (n2+n1)/2 + 1
 b <- (t(U) %*% solve(Su/sig1) %*% U) / 2 + 1
 sig1_sim <- rinvgamma(3000, a, b)
-plot(x = 1:3000, y = sig1_sim, 'l')
+plot(x = 1:3000, y = sig1_sim, 'l', main = 'sigma1')
 abline(h = 1, col = 'red')
 mean(sig1_sim)
-
-
 
 # Simulation for sig2; Sig2~IG(1,1); prior sig2 = 2
 a <- n2/2 + 1
 b <- (t(V2) %*% solve(Sv/sig2) %*% V2) / 2 + 1
 sig2_sim <- rinvgamma(3000, a, b)
-mean(sig2_sim)
-# Mean = 3.14
-
+plot(x = 1:3000, y = sig2_sim, 'l', main = 'sigma2')
+abline(h = 2, col = 'red')
 
 
 

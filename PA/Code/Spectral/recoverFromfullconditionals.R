@@ -2,7 +2,8 @@
 
 library(mvtnorm)
 library(truncnorm)
-source('simulate_process.R')
+setwd("/Users/hongjianyang/Research/PAStudy/PA/")
+source('Code/Spectral/simulate_process.R')
 
 
 # 1. al
