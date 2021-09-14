@@ -199,6 +199,8 @@ hist(Al_sim)
 a <- (n2+n1)/2 + 1
 b <- (t(U) %*% solve(Su/sig1) %*% U) / 2 + 1
 sig1_sim <- rinvgamma(3000, a, b)
+plot(x = 1:3000, y = sig1_sim, 'l')
+abline(h = 1, col = 'red')
 mean(sig1_sim)
 
 
