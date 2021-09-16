@@ -94,20 +94,20 @@ Sv1 <- Sv/sig2
 # Generate U1, U2, V2, Al
 # Generate U1, U2
 # The first n1 values are U1, remaining are U2
-set.seed(123)
+set.seed(129)
 U <- as.vector(t(chol(Su1$S)) %*% rnorm(n1 + n2, mean = 0, sd = sqrt(sig1)))
 U1 <- U[1:n1]
 U2 <- U[n1+1:n2]
 if (length(U1) != n1 | length(U2) != n2) {stop('length do not match')}
 
 # Generate V2
-set.seed(123)
+set.seed(130)
 V2 <- as.vector(t(chol(Sv1)) %*% rnorm(n2, mean = 0, sd = sqrt(sig2)))
 # Generate A_{l}
 Al <- 0.8
 
 # Generate Y1 and Y2
-set.seed(123)
+set.seed(131)
 Y1 <- U1 + as.vector(rnorm(n1, mean = 0, sd = sqrt(tau1)))
 Y2 <- Al * U2 + V2 + as.vector(rnorm(n2, mean = 0, sd = sqrt(tau2)))
 
@@ -255,6 +255,7 @@ sigmaAl <- solve(1/tau2 * t(U2) %*% U2 + 1/5)
 meanAl <- sigmaAl %*% (1/tau2 * t(Y2) %*% U2 - 1/tau2 * t(V2) %*% U2 + 2/5)
 Al_sim <- rtruncnorm(3000, a=0, b=+Inf, mean=meanAl, sd=sqrt(sigmaAl))
 hist(Al_sim)
+abline(v = 0.8, col = 'red')
 
 # Simulation for sig1; sig1~IG(1,1); prior sig1 = 1
 a <- (n2+n1)/2 + 1
