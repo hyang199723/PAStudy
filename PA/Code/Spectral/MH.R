@@ -17,38 +17,38 @@ Rv = as.vector(v2)/sqrt(sigmav)
 for (j in 1:nchains)
 {
   
-  range1 = 1
-  range2 = 1
+  lrange1 = 0
+  lrange2 = 0
 for(i in 1:iters){
   # range1
-  Ms=exp_corr(du12,range=range1)
+  Ms=exp_corr(du12,range=exp(lrange1))
   curll = dmvnorm(Ru,rep(0,sum(n)),Ms,log=TRUE)
-  canrange1 = rnorm(1,range1,0.5)
-  canM = exp_corr(du12,range=canrange1)
+  canrange1 = rnorm(1,lrange1,0.5)
+  canM = exp_corr(du12,range=exp(canrange1))
   canll = dmvnorm(Ru,rep(0,sum(n)),canM,log=TRUE)
 
-  MH1 <- canll-curll+dnorm(canrange1,log=TRUE)-dnorm(range1,log=TRUE)
+  MH1 <- canll-curll+dnorm(canrange1,log=TRUE)-dnorm(lrange1,log=TRUE)
 
 if (log(runif(1))<MH1)
 {
-  range1=canrange1
+  lrange1=canrange1
 }
-  keep.range1[i,j]  <-range1
+  keep.range1[i,j]  <-exp(lrange1)
 
   # range2
-  Sigmav22s=exp_corr(dv2,range = range2)
-  curll2 = dmvnorm(Rv,rep(0,n[2]),Sigmav22s,log=TRUE)
-  canrange2 = rnorm(1,range2,0.5)
-  canSigmav22 = exp_corr(dv2,range=canrange2)
-  canll2 = dmvnorm(Rv,rep(0,n[2]),canSigmav22,log=TRUE)
+  Ss=exp_corr(dv2,range = exp(lrange2))
+  curll2 = dmvnorm(Rv,rep(0,n[2]),Ss,log=TRUE)
+  canrange2 = rnorm(1,lrange2,0.5)
+  canS = exp_corr(dv2,range=exp(canrange2))
+  canll2 = dmvnorm(Rv,rep(0,n[2]),canS,log=TRUE)
   
-  MH2 <- canll2-curll2+dnorm(canrange2,log=TRUE)-dnorm(range2,log=TRUE)
+  MH2 <- canll2-curll2+dnorm(canrange2,log=TRUE)-dnorm(lrange2,log=TRUE)
   
   if (log(runif(1))<MH2)
   {
-    range2=canrange2
+    lrange2=canrange2
   }
-  keep.range2[i,j]  <-range2
+  keep.range2[i,j]  <-exp(lrange2)
   
   
   }
@@ -74,6 +74,8 @@ res$chain=as.factor(res$chain)
 
 # plot chains
 
-ggplot(res)+geom_line(aes(x=index,y=post,col=chain))+facet_grid(~parameter)+theme_bw()+ 
+plotchains=ggplot(res)+geom_line(aes(x=index,y=post,col=chain))+facet_grid(~parameter)+theme_bw()+ 
   geom_hline(aes(yintercept = real))
 
+plotchains
+#ggsave('plotchains.png',plotchains)
