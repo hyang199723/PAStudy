@@ -76,8 +76,8 @@ range1 <- 0.1
 range2 <- 0.3
 tau1   <- 0.1
 tau2   <- 0.3
-set.seed(125); sig1 <- 1
-set.seed(124); sig2 <- 2
+sig1 <- 1
+sig2 <- 2
 theta  <- c(rho,log(range1),log(range2),
             log(tau1),log(tau2),log(sig1),log(sig2))
 n1 <- sum(type == 1)
@@ -94,20 +94,20 @@ Sv1 <- Sv/sig2
 # Generate U1, U2, V2, Al
 # Generate U1, U2
 # The first n1 values are U1, remaining are U2
-set.seed(123)
+set.seed(129)
 U <- as.vector(t(chol(Su1$S)) %*% rnorm(n1 + n2, mean = 0, sd = sqrt(sig1)))
 U1 <- U[1:n1]
 U2 <- U[n1+1:n2]
 if (length(U1) != n1 | length(U2) != n2) {stop('length do not match')}
 
 # Generate V2
-set.seed(123)
+set.seed(130)
 V2 <- as.vector(t(chol(Sv1)) %*% rnorm(n2, mean = 0, sd = sqrt(sig2)))
 # Generate A_{l}
 Al <- 0.8
 
 # Generate Y1 and Y2
-set.seed(123)
+set.seed(131)
 Y1 <- U1 + as.vector(rnorm(n1, mean = 0, sd = sqrt(tau1)))
 Y2 <- Al * U2 + V2 + as.vector(rnorm(n2, mean = 0, sd = sqrt(tau2)))
 
@@ -136,6 +136,30 @@ diff
 angel <- t(U1_sim) %*% U1 / sqrt((t(U1) %*% U1)) / sqrt((t(U1_sim) %*% U1_sim)) # Cos() = 0.9816
 angel
 
+# Look at the trace plot of one station
+station11 <- as.vector(U1_sim_all[11,])
+true11 <- U1[11]
+plot(x = 1:3000, y = station11, 'l',main = 'U1, station11')
+abline(h = true11, col = 'red')
+
+
+# Look at the trace plot of one station
+station25 <- as.vector(U1_sim_all[25,])
+true25 <- U1[25]
+plot(x = 1:3000, y = station25, 'l', main = 'U1, station25')
+abline(h = true25, col = 'red')
+
+# Look at the trace plot of one station
+station34 <- as.vector(U1_sim_all[34,])
+true34 <- U1[34]
+plot(x = 1:3000, y = station34, 'l', main = 'U1, station34')
+abline(h = true34, col = 'red')
+
+# Look at the trace plot of one station
+station60 <- as.vector(U1_sim_all[60,])
+true60 <- U1[60]
+plot(x = 1:3000, y = station60, 'l' , main = 'U1, station60')
+abline(h = true60, col = 'red')
 
 # Simulation for U2:
 S2 <- S22 - S21 %*% solve(S11) %*% S12
@@ -155,17 +179,31 @@ diff <- (t(U2_sim - U2) %*% (U2_sim - U2)) / (t(U2) %*% U2) # 58% difference
 diff
 angel <- t(U2_sim) %*% U2 / sqrt((t(U2) %*% U2)) / sqrt((t(U2_sim) %*% U2_sim)) # Cos() = 0.5
 angel
-# Look at the trace plot of one station
-station11 <- as.vector(U1_sim_all[11,])
-true11 <- U1[11]
-plot(x = 1:3000, y = station11, 'l')
-abline(h = true11, col = 'red')
 
 # Look at the trace plot of one station
-station11 <- as.vector(U1_sim_all[25,])
-true11 <- U1[25]
-plot(x = 1:3000, y = station11, 'l')
+station11 <- as.vector(U2_sim_all[11,])
+true11 <- U2[11]
+plot(x = 1:3000, y = station11, 'l',main = 'U2, station11')
 abline(h = true11, col = 'red')
+
+
+# Look at the trace plot of one station
+station25 <- as.vector(U2_sim_all[25,])
+true25 <- U2[25]
+plot(x = 1:3000, y = station25, 'l', main = 'U2, station25')
+abline(h = true25, col = 'red')
+
+# Look at the trace plot of one station
+station34 <- as.vector(U2_sim_all[34,])
+true34 <- U2[34]
+plot(x = 1:3000, y = station34, 'l', main = 'U2, station34')
+abline(h = true34, col = 'red')
+
+# Look at the trace plot of one station
+station60 <- as.vector(U2_sim_all[60,])
+true60 <- U2[60]
+plot(x = 1:3000, y = station60, 'l' , main = 'U2, station60')
+abline(h = true60, col = 'red')
 
 # Simulation for V2:
 #Sv = sig2 * Sigma_{v22}
@@ -186,31 +224,65 @@ angel
 # Look at the trace plot of one station
 station11 <- as.vector(V2_sim_all[11,])
 true11 <- V2[11]
-plot(x = 1:3000, y = station11, 'l')
+plot(x = 1:3000, y = station11, 'l',main = 'V2, station11')
 abline(h = true11, col = 'red')
+
+
+# Look at the trace plot of one station
+station25 <- as.vector(V2_sim_all[25,])
+true25 <- V2[25]
+plot(x = 1:3000, y = station25, 'l', main = 'V2, station25')
+abline(h = true25, col = 'red')
+
+# Look at the trace plot of one station
+station34 <- as.vector(V2_sim_all[34,])
+true34 <- V2[34]
+plot(x = 1:3000, y = station34, 'l', main = 'V2, station34')
+abline(h = true34, col = 'red')
+
+# Look at the trace plot of one station
+station60 <- as.vector(V2_sim_all[60,])
+true60 <- V2[60]
+plot(x = 1:3000, y = station60, 'l' , main = 'V2, station60')
+abline(h = true60, col = 'red')
 
 # Simulation for Al; Al ~ TN(2,5); Prior Al = 0.8
 sigmaAl <- solve(1/tau2 * t(U2) %*% U2 + 1/5)
 meanAl <- sigmaAl %*% (1/tau2 * t(Y2) %*% U2 - 1/tau2 * t(V2) %*% U2 + 2/5)
 Al_sim <- rtruncnorm(3000, a=0, b=+Inf, mean=meanAl, sd=sqrt(sigmaAl))
 hist(Al_sim)
+abline(v = 0.8, col = 'red')
 
 # Simulation for sig1; sig1~IG(1,1); prior sig1 = 1
 a <- (n2+n1)/2 + 1
-b <- (t(U) %*% solve(Su/sig1) %*% U) / 2 + 1
+b <- (t(U) %*% solve(S$S) %*% U) / 2 + 1
 sig1_sim <- rinvgamma(3000, a, b)
-plot(x = 1:3000, y = sig1_sim, 'l')
+plot(x = 1:3000, y = sig1_sim, 'l', main = 'sigma1')
 abline(h = 1, col = 'red')
 mean(sig1_sim)
 
-
-
 # Simulation for sig2; Sig2~IG(1,1); prior sig2 = 2
 a <- n2/2 + 1
-b <- (t(V2) %*% solve(Sv/sig2) %*% V2) / 2 + 1
+b <- (t(V2) %*% solve(Sv1) %*% V2) / 2 + 1
 sig2_sim <- rinvgamma(3000, a, b)
-mean(sig2_sim)
-# Mean = 3.14
+plot(x = 1:3000, y = sig2_sim, 'l', main = 'sigma2')
+abline(h = 2, col = 'red')
+
+# Simulation for tau1; tau1 = 0.1
+# Assume that prior for tau1 is invgamma(1,1)
+a <- n1/2 + 1
+b <- t(Y1 - U1) %*% (Y1 - U1) / 2 + 1
+tau1_sim <- rinvgamma(3000, a, b)
+plot(x = 1:3000, y = tau1_sim, 'l', main = 'tau1_sim')
+abline(h = 0.1, col = 'red')
+
+# Simulation for tau2; tau2 = 0.3
+# Assume that prior for tau2 is invgamma(1,1)
+a <- n2/2 + 1
+b <- t(Y2 - Al*U2 - V2) %*% (Y2 - Al*U2 - V2) / 2 + 1
+tau2_sim <- rinvgamma(3000, a, b)
+plot(x = 1:3000, y = tau2_sim, 'l', main = 'tau2_sim')
+abline(h = 0.3, col = 'red')
 
 
 
