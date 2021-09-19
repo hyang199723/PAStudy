@@ -109,3 +109,28 @@ for (i in 1:n[2])
   abline(v=v2[i],col='red')
 }
 
+
+# tau1
+#priors 
+alpha1=.1
+beta1=.1
+
+p1.1=n[1]/2+alpha1
+p2.1=t(Y1-u1)%*%(Y1-u1)/2+beta1
+
+hist(1/rgamma(1000,p1.1,p2.1))
+abline(v=tau1,col='red')
+
+#tau2 
+#priors
+alpha2=.1
+beta2=.1
+
+
+p1.2=n[2]/2+alpha2
+p2.2=t(Y2-(al*u2+v2))%*%(Y2-(al*u2+v2))/2+beta2
+
+hist(1/rgamma(1000,p1.2,p2.2))
+abline(v=tau2,col='red')
+
+
