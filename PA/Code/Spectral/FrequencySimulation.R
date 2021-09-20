@@ -3,6 +3,16 @@ library(mvtnorm)
 library(MASS)
 library(truncnorm)
 library(invgamma)
+setwd("/Users/hongjianyang/Research/PAStudy/PA/")
+raw_frm <- read.csv("Data/Formatted_PA_FRM/FRM_2020_Hourly_Formatted.csv", header = TRUE)
+raw_pa <- read.csv("Data/Formatted_PA_FRM/PA_2020_Hourly_Formatted.csv", header = TRUE)
+raw_frm$Timestamp <- as.POSIXct(raw_frm$Timestamp, format = "%Y-%m-%d %H:%M:%OS")
+raw_pa$Timestamp <- as.POSIXct(raw_pa$Timestamp, format = "%Y-%m-%d %H:%M:%OS")
+# Select three timestamps
+start = as.POSIXct('2020-01-30 12:00:00')
+end = as.POSIXct('2020-01-30 14:00:00')
+frm <- subset(raw_frm, (Timestamp >= start) & (Timestamp <= end))
+pa <- subset(raw_pa, (Timestamp >= start) & (Timestamp <= end))
 ########################################################################
 ##########      Functions
 ########################################################################
@@ -17,7 +27,7 @@ covU <- function(d,t,theta) {
   S[t==1,t==1] <- sig1*exp(-d[t==1,t==1]/range1)
   S[t==1,t==2] <- sig1*exp(-d[t==1,t==2]/range1)
   S[t==2,t==1] <- sig1*exp(-d[t==2,t==1]/range1)
-  S[t==2,t==2] <- sig1*exp(-d[t==2,t==2]/range1) # Should it be range1 or range2?
+  S[t==2,t==2] <- sig1*exp(-d[t==2,t==2]/range1)
   return(S)
 }
 
@@ -151,7 +161,6 @@ for (i in 1:nt) {
   Y2 <- as.vector(Al * U2 + V2 + as.vector(rnorm(n2, mean = 0, sd = sqrt(tau2))))
   dat[1:n1, i] = Y1
   dat[(n1+1):(n1+n2), i] = Y2
-  
 }
 
 ########################################################################
@@ -165,6 +174,7 @@ for (i in 1:nt) {
   Ys1[, i] = fft_real[dat[1:n1, i]]
   Ys2[, i] = fft_real[dat[(n1+1):(n1+n2), i]]
 }
+
 
 
 ## Parameters required to generate samples
