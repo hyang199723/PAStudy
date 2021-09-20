@@ -76,6 +76,8 @@ range1 <- 0.1
 range2 <- 0.3
 sig1 <- 1
 sig2 <- 2
+tau1 <- 0.1
+tau2 <- 0.3
 theta  <- c(rho,log(range1),log(range2),
             log(tau1),log(tau2),log(sig1),log(sig2))
 n1 <- sum(type == 1)
@@ -121,7 +123,8 @@ V2_init <- as.vector(rnorm(n2))
 Al_init <- 0
 sig1_init <- 2
 sig2_init <- 2
-
+tau1_init = 0.1
+tau2_init = 0.3
 ########################################################################
 ##########   Gibbs Sampler
 ########################################################################
@@ -155,13 +158,14 @@ tau2_sim_all <- rep(0, iter)
 
 ## Sampling
 ##### Note: tau1 and tau2 also needs updating
-tau1_sim = tau1
-tau2_sim = tau2
+tau1_sim = tau1_init
+tau2_sim = tau2_init
 U2_sim = U2_init
 V2_sim = V2_init
 Al_sim = Al_init
 sig1_sim = sig1_init
 sig2_sim = sig2_init
+
 for (i in 1:iter) {
   # Sample U1
   sigmaU1 <- solve(1/tau1_sim * diag(1, n1) + 1/sig1_sim * S1inv)
@@ -201,7 +205,17 @@ for (i in 1:iter) {
   sig2_sim <- rinvgamma(1, a, b)
   sig2_sim_all[i] = sig2_sim
   
+  # Sample tau1
+  a <- n1/2 + 1
+  b <- t(Y1 - U1) %*% (Y1 - U1) / 2 + 1
+  tau1_sim <- rinvgamma(1, a, b)
+  tau1_sim_all[i] = tau1_sim
   
+  # Sample tau2
+  a <- n2/2 + 1
+  b <- t(Y2 - Al*U2 - V2) %*% (Y2 - Al*U2 - V2) / 2 + 1
+  tau2_sim <- rinvgamma(1, a, b)
+  tau2_sim_all[i] = tau2_sim
 }
 ### Plot results
 par(mfrow=c(3,3))
@@ -232,3 +246,17 @@ plot(sig2_sim_all,type="l",
      xlab="MCMC iteration",ylab="Sample",
      main='sigma2')
 abline(sig2,0,col=2,lwd=2)
+plot(tau1_sim_all,type="l",
+     xlab="MCMC iteration",ylab="Sample",
+     main='tau1')
+abline(tau1,0,col=2,lwd=2)
+plot(tau2_sim_all,type="l",
+     xlab="MCMC iteration",ylab="Sample",
+     main='tau2')
+abline(tau2,0,col=2,lwd=2)
+
+
+
+
+
+
