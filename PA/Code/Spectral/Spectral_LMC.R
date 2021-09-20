@@ -38,10 +38,12 @@ fft_real <- function(dat,inverse=FALSE){
     n  <- length(x)
     n2 <- floor(n/2)
     y  <- fft(x,inverse=FALSE)
+    # if n is even
     if(n%%2==0){
       X1     <- Re(y)[1:(n2+1)]
       X2     <- Im(y)[2:(n2)]
     }
+    # if n is odd
     if(n%%2!=0){
       X1     <- Re(y)[1:(n2+1)]
       X2     <- Im(y)[2:(n2+1)]
@@ -195,8 +197,10 @@ LMC <- function(Y1,Y2,s1,s2,
 
         for(i in 1:n1){Ys1[i,] <- fft_real(Y1[i]-beta1)}
         for(i in 1:n2){Ys2[i,] <- fft_real(Y2[i]-beta2)}
-        taus1 <- const*taue1
-        taus2 <- const*taue2
+        #taus1 <- const*taue1
+        #taus2 <- const*taue2
+        taus1 <- nt/2 * taue1
+        taus2 <- nt/2 * taue2
 
       ##############################################:
       ####      LMC TERMS (spectral space)     #####:
@@ -204,6 +208,7 @@ LMC <- function(Y1,Y2,s1,s2,
 
 # Here is where we would put the complicated full conditions that are
 # derived in overleaf
+        
 
       ###################################################:
       ####  COVARIANCE PARAMETERS (spectral domain) #####:
@@ -215,7 +220,7 @@ LMC <- function(Y1,Y2,s1,s2,
        for(t in 1:nt){
          VVV     <- taus2*sum(U2[,t]^2)+tauA
          MMM     <- taus2*sum((Ys2[,t]-V2[,t])*U2[,t])+muA*tauA
-         A[t]    <- rnorm(1,MMM/VVV,1/sqrt(VVV))   
+         A[t]    <- rnorm(1,MMM/VVV,1/sqrt(VVV))
 
          U       <- c(U1[,t],U2[,t])
          tauU[t] <- rgamma(1,(n1+n2)/2+aU,t(U)%*%E$inv%*%U/2+bU)
