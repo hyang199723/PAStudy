@@ -263,4 +263,55 @@ for (i in 1:iter) {
   b <- t(Y2 - Al*U2 - V2) %*% (Y2 - Al*U2 - V2) / 2 + 1
   tau2_sim <- rinvgamma(1, a, b)
   tau2_sim_all[i] = tau2_sim
+  
+  # Update range1 and range2
+  iters=5000
+  nchains=2
+  
+  keep.range1=matrix(NA,iters,nchains)
+  keep.range2=matrix(NA,iters,nchains)
+  
+  # Initial values
+  
+  Ru = as.vector(u)/sqrt(sigmau)
+  Rv = as.vector(v2)/sqrt(sigmav)
+  
+  for (j in 1:nchains)
+  {
+    
+    lrange1 = 0
+    lrange2 = 0
+    for(i in 1:iters){
+      # range1
+      Ms=exp_corr(du12,range=exp(lrange1))
+      curll = dmvnorm(Ru,rep(0,sum(n)),Ms,log=TRUE)
+      canrange1 = rnorm(1,lrange1,0.5)
+      canM = exp_corr(du12,range=exp(canrange1))
+      canll = dmvnorm(Ru,rep(0,sum(n)),canM,log=TRUE)
+      
+      MH1 <- canll-curll+dnorm(canrange1,log=TRUE)-dnorm(lrange1,log=TRUE)
+      
+      if (log(runif(1))<MH1)
+      {
+        lrange1=canrange1
+      }
+      keep.range1[i,j]  <-exp(lrange1)
+      
+      # range2
+      Ss=exp_corr(dv2,range = exp(lrange2))
+      curll2 = dmvnorm(Rv,rep(0,n[2]),Ss,log=TRUE)
+      canrange2 = rnorm(1,lrange2,0.5)
+      canS = exp_corr(dv2,range=exp(canrange2))
+      canll2 = dmvnorm(Rv,rep(0,n[2]),canS,log=TRUE)
+      
+      MH2 <- canll2-curll2+dnorm(canrange2,log=TRUE)-dnorm(lrange2,log=TRUE)
+      
+      if (log(runif(1))<MH2)
+      {
+        lrange2=canrange2
+      }
+      keep.range2[i,j]  <-exp(lrange2)
+      
+      
+    }
 }
