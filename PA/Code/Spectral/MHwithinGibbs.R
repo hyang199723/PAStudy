@@ -31,7 +31,7 @@ log_post <- function(Y, n, range, distance) {
 ################################################
 ########## MH within Gibbs
 ################################################
-iters = 5000
+iters = 10000
 # Generate Initial Values for U1, U2, V2, Al, and sigmas
 U1_init <- as.vector(rnorm(n1))
 U2_init <- as.vector(rnorm(n2))
@@ -64,12 +64,13 @@ tau2_sim_all <- rep(0, iters)
 ## Sampling
 tau1_sim = tau1_init
 tau2_sim = tau2_init
+U1_sim = U1_init
 U2_sim = U2_init
 V2_sim = V2_init
 Al_sim = Al_init
 sig1_sim = sig1_init
 sig2_sim = sig2_init
-
+U_sim = c(U1_sim, U2_sim)
 
 ### Metropolis Hasting 
 # Bookkeeping
@@ -79,9 +80,9 @@ keep.range2 = rep(NA, iters)
 # Initial values
 #Ru = as.vector(u)/sqrt(sigmau)
 #Rv = as.vector(v2)/sqrt(sigmav)
+#U = U / sqrt(sig1)
+#V2 = V2 / sqrt(sig2) #?
 
-U = U / sqrt(sig1)
-V2 = V2 / sqrt(sig2) #?
 # Get distance matrix:
 dist_full = dist
 dist22 = dist[(n1+1):(n1 + n2), (n1+1):(n1 + n2)]
@@ -91,7 +92,8 @@ currange2 = 0.5
 for(i in 1:iters){
   # range1
   canrange1 = rnorm(1, currange1, 0.5)
-  logR1 <- log_post(U, n1 + n2, canrange1, dist_full) - log_post(U, n1 + n2, currange1, dist_full) 
+  currU = U_sim/sqrt(sig1_sim)
+  logR1 <- log_post(currU, n1 + n2, canrange1, dist_full) - log_post(currU, n1 + n2, currange1, dist_full) 
   
   if (log(runif(1)) < logR1) {
     currange1 = canrange1
@@ -100,7 +102,8 @@ for(i in 1:iters){
   
   # range2
   canrange2 = rnorm(1, currange2, 0.5)
-  logR2 <- log_post(V2, n2, canrange2, dist22) - log_post(V2, n2, currange2, dist22) 
+  currV = as.vector(V2_sim/sqrt(sig2_sim))
+  logR2 <- log_post(currV, n2, canrange2, dist22) - log_post(currV, n2, currange2, dist22) 
   
   if (log(runif(1)) < logR2)
   {
@@ -164,13 +167,13 @@ for(i in 1:iters){
   
   # Sample tau1
   a <- n1/2 + 1
-  b <- t(Y1 - U1) %*% (Y1 - U1) / 2 + 1
+  b <- t(Y1 - U1_sim) %*% (Y1 - U1_sim) / 2 + 1
   tau1_sim <- rinvgamma(1, a, b)
   tau1_sim_all[i] = tau1_sim
   
   # Sample tau2
   a <- n2/2 + 1
-  b <- t(Y2 - Al*U2 - V2) %*% (Y2 - Al*U2 - V2) / 2 + 1
+  b <- t(Y2 - Al_sim*U2_sim - V2_sim) %*% (Y2 - Al_sim*U2_sim - V2_sim) / 2 + 1
   tau2_sim <- rinvgamma(1, a, b)
   tau2_sim_all[i] = tau2_sim
 }
