@@ -6,9 +6,33 @@ library(invgamma)
 setwd("/Users/hongjianyang/Research/PAStudy/PA/Code/Spectral/")
 source('SimData.R')
 
-########################################################################
-##########      Generate Initial Values for U1, U2, V2, Al, and sigmas
-########################################################################
+################################################
+########## Functions
+################################################
+# Spatial covariance function
+exp_corr=function(d,range)
+{
+  out=exp(-d/range)
+  return(out)
+}
+# Log likelihood function of posterior distribution
+# Y: observed values (multi-normal)
+# n: Number of observations
+# range: range1 or range2, current values (normal)
+# distance: distance matrix
+log_post <- function(Y, n, range, distance) {
+  covariance = exp_corr(distance, range)
+  like = dmvnorm(Y, rep(0, n), covariance, log=TRUE)
+  prior = dnorm(range, log=TRUE)
+  return(like + prior)
+}
+
+
+################################################
+########## MH within Gibbs
+################################################
+iters = 5000
+# Generate Initial Values for U1, U2, V2, Al, and sigmas
 U1_init <- as.vector(rnorm(n1))
 U2_init <- as.vector(rnorm(n2))
 V2_init <- as.vector(rnorm(n2))
@@ -20,33 +44,22 @@ tau2_init = 0.3
 ########################################################################
 ##########   Gibbs Sampler
 ########################################################################
-iter = 2000
-## Parameters required to generate samples
-S <- covIndividual(dist, type, theta)
-S11 <- S$S11; S12 <- S$S12; S21 <- S$S21; S22 <- S$S22
 # U1
-S1 <- S11 - S12 %*% solve(S22) %*% S21
-S1inv <- solve(S1)
-A1 <- S12 %*% solve(S22)
-
-U1_sim_all <- matrix(data = 0, nrow = n1, ncol = iter)
+U1_sim_all <- matrix(data = 0, nrow = n1, ncol = iters)
 # U2
-S2 <- S22 - S21 %*% solve(S11) %*% S12
-A2 <- S21 %*% solve(S11)
-S2inv <- solve(S2)
-U2_sim_all <- matrix(data = 0, nrow = n2, ncol = iter)
+U2_sim_all <- matrix(data = 0, nrow = n2, ncol = iters)
 # V2
-V2_sim_all <- matrix(data = 0, nrow = n2, ncol = iter)
+V2_sim_all <- matrix(data = 0, nrow = n2, ncol = iters)
 # Al
-Al_sim_all <- rep(0,iter)
+Al_sim_all <- rep(0,iters)
 # sig1
-sig1_sim_all <- rep(0, iter)
+sig1_sim_all <- rep(0, iters)
 # sig2
-sig2_sim_all <- rep(0, iter)
+sig2_sim_all <- rep(0, iters)
 # tau1
-tau1_sim_all <- rep(0, iter)
+tau1_sim_all <- rep(0, iters)
 # tau2
-tau2_sim_all <- rep(0, iter)
+tau2_sim_all <- rep(0, iters)
 
 ## Sampling
 tau1_sim = tau1_init
@@ -57,7 +70,59 @@ Al_sim = Al_init
 sig1_sim = sig1_init
 sig2_sim = sig2_init
 
-for (i in 1:iter) {
+
+### Metropolis Hasting 
+# Bookkeeping
+keep.range1 = rep(NA, iters)
+keep.range2 = rep(NA, iters)
+
+# Initial values
+#Ru = as.vector(u)/sqrt(sigmau)
+#Rv = as.vector(v2)/sqrt(sigmav)
+
+U = U / sqrt(sig1)
+V2 = V2 / sqrt(sig2) #?
+# Get distance matrix:
+dist_full = dist
+dist22 = dist[(n1+1):(n1 + n2), (n1+1):(n1 + n2)]
+
+currange1 = 0.5
+currange2 = 0.5
+for(i in 1:iters){
+  # range1
+  canrange1 = rnorm(1, currange1, 0.5)
+  logR1 <- log_post(U, n1 + n2, canrange1, dist_full) - log_post(U, n1 + n2, currange1, dist_full) 
+  
+  if (log(runif(1)) < logR1) {
+    currange1 = canrange1
+  }
+  keep.range1[i]  <- currange1
+  
+  # range2
+  canrange2 = rnorm(1, currange2, 0.5)
+  logR2 <- log_post(V2, n2, canrange2, dist22) - log_post(V2, n2, currange2, dist22) 
+  
+  if (log(runif(1)) < logR2)
+  {
+    currange2 = canrange2
+  }
+  keep.range2[i]  <- currange2
+  
+  ## Parameters required to generate Gibbs samples
+  currS <- exp_corr(dist_full, currange1)
+  S11 <- currS[1:n1, 1:n1]
+  S12 <- currS[1:n1, (n1+1):(n1+n2)]
+  S21 <- currS[(n1+1):(n1+n2), 1:n1]
+  S22 <- currS[(n1+1):(n1+n2), (n1+1):(n1+n2)]
+  # U1
+  S1 <- S11 - S12 %*% solve(S22) %*% S21
+  S1inv <- solve(S1)
+  A1 <- S12 %*% solve(S22)
+  # U2
+  S2 <- S22 - S21 %*% solve(S11) %*% S12
+  A2 <- S21 %*% solve(S11)
+  S2inv <- solve(S2)
+  
   # Sample U1
   sigmaU1 <- solve(1/tau1_sim * diag(1, n1) + 1/sig1_sim * S1inv)
   meanU1 <- sigmaU1 %*% (1/tau1_sim * Y1 + 1/sig1_sim * S1inv %*% A1 %*% U2_sim)
@@ -72,7 +137,8 @@ for (i in 1:iter) {
   U2_sim_all[,i] = U2_sim
   
   # Sample V2
-  sigmaV2 <- solve(1/sig2_sim *solve(Sv1) + 1/tau2_sim * diag(1, n2))
+  currSv <- exp_corr(dist22, currange2)
+  sigmaV2 <- solve(1/sig2_sim * solve(currSv) + 1/tau2_sim * diag(1, n2))
   meanV2 <- sigmaV2 %*% (1/tau2_sim * Y2 - 1/tau2_sim * Al_sim * U2_sim)
   V2_sim <- as.vector(t(chol(sigmaV2)) %*% rnorm(n2)) + meanV2
   V2_sim_all[,i] = V2_sim
@@ -86,13 +152,13 @@ for (i in 1:iter) {
   # Sample sig1
   U_sim <- as.vector(append(U1_sim, U2_sim))
   a <- (n2+n1)/2 + 1
-  b <- (t(U_sim) %*% solve(S$S) %*% U_sim) / 2 + 1
+  b <- (t(U_sim) %*% solve(currS) %*% U_sim) / 2 + 1
   sig1_sim <- rinvgamma(1, a, b)
   sig1_sim_all[i] = sig1_sim
   
   # Sample sig2
   a <- n2/2 + 1
-  b <- (t(V2_sim) %*% solve(Sv1) %*% V2_sim) / 2 + 1
+  b <- (t(V2_sim) %*% solve(currSv) %*% V2_sim) / 2 + 1
   sig2_sim <- rinvgamma(1, a, b)
   sig2_sim_all[i] = sig2_sim
   
@@ -108,7 +174,6 @@ for (i in 1:iter) {
   tau2_sim <- rinvgamma(1, a, b)
   tau2_sim_all[i] = tau2_sim
 }
-### Plot results
 par(mfrow=c(3,3))
 index <- c(2,20,30)
 for (j in index) {
@@ -145,9 +210,7 @@ plot(tau2_sim_all,type="l",
      xlab="MCMC iteration",ylab="Sample",
      main='tau2')
 abline(tau2,0,col=2,lwd=2)
-
-
-
-
-
-
+plot(x = 1:iters, y = keep.range1, 'l')
+abline(h = 0.1, col = 'red')
+plot(x = 1:iters, y = keep.range2, 'l')
+abline(h = 0.3, col = 'red')

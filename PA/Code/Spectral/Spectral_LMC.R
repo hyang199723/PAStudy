@@ -147,7 +147,7 @@ LMC <- function(Y1,Y2,s1,s2,
    # Keep track of stuff
 
     keep_theta  <- matrix(0,iters,6)
-    colnames(keep_theta) <- c("rhoU","rhoU","tauU","tauV","taue1","taue2")
+    colnames(keep_theta) <- c("rhoU","rhoV","tauU","tauV","taue1","taue2")
 
     att <- acc <- MH <- rep(0.5,q)
 

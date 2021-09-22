@@ -212,9 +212,9 @@ LMCpredict <- function(theta, s, s0, x, x0, type, beta, y) {
   d <- as.matrix(dist[1:nrow(s0), (nrow(s0)+1):ncol(dist)])
   
   S      <- matrix(0,nrow = nrow(s0), ncol = ncol(d))
-  S[,type==1] <- sig1*exp(-d[,type==1]/range1) +   
+  S[, type==1] <- sig1*exp(-d[,type==1]/range1) +   
     sig2*rho*rho*exp(-d[,type==1]/range2)
-  S[,type==2] <- sig2*rho*exp(-d[,type==2]/range2)
+  S[, type==2] <- sig2*rho*exp(-d[,type==2]/range2)
   sigma0 <- S
   
   y_hat <- x0%*%beta + sigma0 %*% sigma1_inv %*% (y - x %*% beta)
