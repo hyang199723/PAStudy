@@ -271,6 +271,7 @@ LMC <- function(Y1,Y2,s1,s2,
         sig1_sim = tau1
         sig2_sim = tau2
         U_sim = c(U1_sim, U2_sim)
+
         for (t in 1:nt) {
           # keep_theta: c("rhoU","rhoV","tauU","tauV","taue1","taue2")
           # keep_theta  <- matrix(0,iters,q)
