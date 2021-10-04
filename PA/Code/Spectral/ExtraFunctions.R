@@ -50,8 +50,9 @@ covV <- function(d,t,theta) {
 }
 
 
-covV2 <- function(d,t,range2) {
+covV2 <- function(d,t,lrange2) {
   # We only need type = 2
+  range2 <- exp(lrange2)
   d <- d[t == 2, t== 2]
   t <- t[t == 2]
   S <- diag(0, length(t))
