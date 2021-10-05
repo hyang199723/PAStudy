@@ -6,7 +6,7 @@ nchains=2
 keep.range1=matrix(NA,iters,nchains)
 keep.range2=matrix(NA,iters,nchains)
 
-
+setwd("/Users/hongjianyang/Research/PAStudy/PA/Code/Spectral/")
 source('simulate_process.R')
 
 # Initial values
