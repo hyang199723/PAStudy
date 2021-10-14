@@ -126,14 +126,15 @@ invU <- function(d,n1,n2,rho){
   G   <- E$vectors
   D   <- E$values
   S1  <- S[1:n1,1:n1]
-  S2  <- S[1:n2+n1,1:n2+n1]
-  S12 <- S[1:n1,1:n2+n1]
+  S2  <- S[(n1+1):(n2+n1),(n1+1):(n2+n1)]
+  S12 <- S[1:n1,(n1+1):(n2+n1)]
+  S21 <- S[(n1+1):(n2+n1),1:n1]
   Q   <- G%*%diag(1/D)%*%t(G)
   Q1  <- Q[1:n1,1:n1]
   Q2  <- Q[1:n2+n1,1:n2+n1]
   A12 <- S12%*%solve(S2)
   A21 <- t(S12)%*%solve(S1)
-  out <- list(G=G,D=D,Q=Q,Q1=Q1,Q2=Q2,A12=A12,A21=A21)
+  out <- list(G=G,D=D,Q=Q,Q1=Q1,Q2=Q2,A12=A12,A21=A21,S11=S1,S12=S12,S22=S2,S21=S21)
   return(out)}
 
 
