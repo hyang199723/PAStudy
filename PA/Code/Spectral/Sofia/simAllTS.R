@@ -7,6 +7,7 @@ library(ggplot2)
 library(mgcv)
 library(MASS)
 library(mvtnorm)
+library(truncnorm)
 
 # correlation function
 exp_corr=function(d,range)
@@ -17,7 +18,7 @@ exp_corr=function(d,range)
 
 ###### set some parameters ########
 
-n=c(200,250) # number of locations
+n=c(300,350) # number of locations
 
 nt=10 # total time steps
 
@@ -28,15 +29,22 @@ al=runif(nt,min=.5,max=1)
 
 # correlation parameters
 set.seed(88)
-sigmau=rnorm(nt,sd=2)+seq(from=102,to=120,by=2)
+sigmau=seq(from=100,to=1,length=10)+rnorm(nt,sd=2)
 set.seed(564)
-sigmav=rnorm(nt,sd=2)+seq(from=10,to=28,by=2)
-set.seed(213)
-rangeu=runif(nt,min=0.5,max=1.5)
+sigmav=seq(from=10,to=.1,length=10)+rtruncnorm(nt,a=0,sd=.2)
+# same range for all freq
+rangeu=0.9
 lrangeu=log(rangeu)
-set.seed(313)
-rangev=runif(nt,min=0.5,max=1.5)
+rangev=0.5
 lrangev=log(rangev)
+
+# Different range per freq
+# set.seed(213)
+# rangeu=runif(nt,min=0.5,max=1.5)
+# lrangeu=log(rangeu)
+# set.seed(313)
+#rangev=runif(nt,min=0.5,max=1.5)
+#lrangev=log(rangev)
 
 ## mean
 beta.1=0
@@ -58,21 +66,21 @@ u2=matrix(NA,ncol=nt,nrow=n[2])
 v2=matrix(NA,ncol=nt,nrow=n[2])
 dv2=as.matrix(dist(coords2)) # distance matrix v
 
+M=exp_corr(du12,range=rangeu)
+Sigmav22=exp_corr(dv2,range = rangev)
 for (t in 1:nt)
 {
   #u
-  M=exp_corr(du12,range=rangeu[t])
+  #M=exp_corr(du12,range=rangeu[t])
   u[,t]=t(chol(M))%*%rnorm(sum(n),0,sqrt(sigmau[t]))
   u1[,t]=u[(1:n[1]),t]
   u2[,t]=u[(n[1]+1):(sum(n)),t]
   
   #v
-  Sigmav22=exp_corr(dv2,range = rangev[t])
+  #Sigmav22=exp_corr(dv2,range = rangev[t])
   v2[,t]=t(chol(Sigmav22))%*%rnorm(n[2],0,sqrt(sigmav[t]))
   
 }
-
-
 
 ####### simulate response Y ############
 
@@ -93,6 +101,10 @@ Y2=matrix(NA,ncol=nt,nrow=n[2])
 for(i in 1:n[1]){Y1[i,] <- fft_real(Z1sp[i,],inverse=TRUE)+beta.1+rnorm(nt,0,sqrt(tau1))}
 for(i in 1:n[2]){Y2[i,] <- fft_real(Z2sp[i,],inverse=TRUE)+beta.2+rnorm(nt,0,sqrt(tau2))}
 
+Y1.real=Y1
+Y2.real=Y2
+
+
 ## missing values 
 
 miss1=list()
@@ -100,8 +112,8 @@ miss2=list()
 set.seed(8923)
 for (t in 1:nt)
 {
-  miss1[[t]]=sample(1:n[1],ceiling(nt/5),replace=FALSE)
-  miss2[[t]]=sample(1:n[2],ceiling(nt/5),replace=FALSE)
+  miss1[[t]]=sample(1:n[1],ceiling(n[1]/6),replace=FALSE)
+  miss2[[t]]=sample(1:n[2],ceiling(n[2]/6),replace=FALSE)
   Y1[miss1[[t]],t]=NA
   Y2[miss2[[t]],t]=NA
 }
