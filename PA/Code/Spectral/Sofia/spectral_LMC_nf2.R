@@ -158,7 +158,7 @@ for(iter in 1:iters){
       sigmaAl <- solve(1/taus2 * t(U2[,r]) %*% U2[,r] + 1/5)
       gamma0=rnorm(1,0,2) # is it correct?
       gamma1=rnorm(1,0,2) # is it correct?
-      meanAl <- sigmaAl %*% (1/taus2 * t(Ys2[,r]) %*% U2[,r] - 1/taus2 * t(V2[,r]) %*% U2[,r] + (gamma0+gamma1*l)/5)
+      meanAl <- sigmaAl %*% (1/taus2 * t(Ys2[,r]) %*% U2[,r] - 1/taus2 * t(V2[,r]) %*% U2[,r] + (gamma0+gamma1*r)/5)
       A[r] <- rtruncnorm(1, a=0, b=+Inf, mean=meanAl, sd=sqrt(sigmaAl))
       
       # # Sample sig1
