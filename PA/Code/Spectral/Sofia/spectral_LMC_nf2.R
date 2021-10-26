@@ -101,8 +101,8 @@ for(iter in 1:iters){
     ####     ERROR VARIANCES (real space)    #####:
     ##############################################:
     # full conditionals for taue1 and taue2 
-    taue1 <- 1/rgamma(1,n1*nt/2+0.01,sum((Y1-beta1-Z1)^2)/2+0.01)
-    taue2 <- 1/rgamma(1,n2*nt/2+0.01,sum((Y2-beta2-Z2)^2)/2+0.01)
+    taue1 <- 1/rgamma(1,n1*nt/2+1,sum((Y1-beta1-Z1)^2)/2+1)
+    taue2 <- 1/rgamma(1,n2*nt/2+1,sum((Y2-beta2-Z2)^2)/2+1)
     # 
     ##############################################:
     ####     Transform to spectral land      #####:
@@ -156,7 +156,9 @@ for(iter in 1:iters){
       
       # # Sample Al
       sigmaAl <- solve(1/taus2 * t(U2[,r]) %*% U2[,r] + 1/5)
-      meanAl <- sigmaAl %*% (1/taus2 * t(Ys2[,r]) %*% U2[,r] - 1/taus2 * t(V2[,r]) %*% U2[,r] + 0.8/5)
+      gamma0=rnorm(1,0,2) # is it correct?
+      gamma1=rnorm(1,0,2) # is it correct?
+      meanAl <- sigmaAl %*% (1/taus2 * t(Ys2[,r]) %*% U2[,r] - 1/taus2 * t(V2[,r]) %*% U2[,r] + (gamma0+gamma1*l)/5)
       A[r] <- rtruncnorm(1, a=0, b=+Inf, mean=meanAl, sd=sqrt(sigmaAl))
       
       # # Sample sig1
@@ -170,19 +172,26 @@ for(iter in 1:iters){
       b <- (t(V2[,r]) %*% eigV$Q %*% V2[,r]) / 2 + 1 
       sigmaV[r] = 1/rgamma(1, a, b)
       
+      
+    }
       ###############################################
       ##       Metropolis H: Range parameters      ##
       ###############################################
       
-      Ru = as.vector(U_sim)/sqrt(sigmaU[r])
-      Rv = as.vector(V2[,r])/sqrt(sigmaV[r])
+      # Ru = as.vector(U_sim)/sqrt(sigmaU[r])
+      # Rv = as.vector(V2[,r])/sqrt(sigmaV[r])
+      
+      Ru=sweep(rbind(U1,U2),2,FUN='/',sigmaU)
+      Rv=sweep(V2,2,FUN='/',sigmaV)
       
       # range1
       Ms=exp_corr(d,range=exp(lrangeU))
-      curll = dmvnorm(Ru,rep(0,n1+n2),Ms,log=TRUE)
+      curll = sum(apply(Ru,2,dmvnorm,mean=rep(0,n1+n2),sigma=Ms,log=TRUE))
+      #curll = dmvnorm(Ru,rep(0,n1+n2),Ms,log=TRUE)
       canrange1 = rnorm(1,lrangeU,0.5)
       canM = exp_corr(d,range=exp(canrange1))
-      canll = dmvnorm(Ru,rep(0,n1+n2),canM,log=TRUE)
+      canll = sum(apply(Ru,2,dmvnorm,mean=rep(0,n1+n2),sigma=canM,log=TRUE))
+      #canll = dmvnorm(Ru,rep(0,n1+n2),canM,log=TRUE)
       
       MH1 <- canll-curll+dnorm(canrange1,log=TRUE)-dnorm(lrangeU,log=TRUE)
       
@@ -193,10 +202,12 @@ for(iter in 1:iters){
       
       # range2
       Ss=exp_corr(dv2,range = exp(lrangeV))
-      curll2 = dmvnorm(Rv,rep(0,n2),Ss,log=TRUE)
+      #curll2 = dmvnorm(Rv,rep(0,n2),Ss,log=TRUE)
+      curll2 = sum(apply(Rv,2,dmvnorm,mean=rep(0,n2),sigma=Ss,log=TRUE))
       canrange2 = rnorm(1,lrangeV,0.5)
       canS = exp_corr(dv2,range=exp(canrange2))
-      canll2 = dmvnorm(Rv,rep(0,n2),canS,log=TRUE)
+      #canll2 = dmvnorm(Rv,rep(0,n2),canS,log=TRUE)
+      canll2 = sum(apply(Rv,2,dmvnorm,mean=rep(0,n2),sigma=canS,log=TRUE))
       
       MH2 <- canll2-curll2+dnorm(canrange2,log=TRUE)-dnorm(lrangeV,log=TRUE)
       
@@ -206,7 +217,7 @@ for(iter in 1:iters){
       }
       
       
-    }
+    #}
     
     
     
