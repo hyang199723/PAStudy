@@ -35,7 +35,7 @@ FRM_data$Timestamp <- as.POSIXct(FRM_data$Timestamp, format = "%Y-%m-%d %H:%M:%O
 # No PA 
 # 
 start = as.POSIXct('2020-03-01 05:00:00') 
-end = as.POSIXct('2020-03-03 23:00:00') # 67 timstamps/spectrums Oct 2 FRM stations OCt 1 - 7
+end = as.POSIXct('2020-03-01 23:00:00') # 67 timstamps/spectrums Oct 2 FRM stations OCt 1 - 7
 
 
 
@@ -47,6 +47,7 @@ frmTS <- pivot_wider(frm, names_from = Timestamp, values_from = PM25)
 # Record locations of PA and FRM stations
 s1 <- frmTS[, 1:2]
 s2 <- paTS[, 1:2]
+# Get rid of the locations
 paTS <- paTS[, -c(1:2)]
 frmTS <- frmTS[, -c(1:2)]
 Y1 = data.frame(frmTS)
@@ -72,14 +73,15 @@ nt       <- ncol(Y1)
 m1       <- is.na(Y1)
 m2       <- is.na(Y2)
 d        <- as.matrix(dist(rbind(s1,s2)))
-dv2=as.matrix(dist(s2))
-const    <- nt/2# ?
+dv2 = as.matrix(dist(s2))
+const    <- nt/2
 
-# Initial values
+# Mean imputation
 beta1 <- mean(colMeans(Y1,na.rm=TRUE))
 beta2 <- mean(colMeans(Y2,na.rm=TRUE))
 Y1[m1] <- beta1
 Y2[m2] <- beta2
+# Initial values
 U1     <- matrix(0,n1,nt)
 U2     <- matrix(0,n2,nt)
 V2     <- matrix(0,n2,nt)
@@ -87,12 +89,11 @@ rangeU  <- exp(mean_rho)
 rangeV   <- exp(mean_rho)
 lrangeU  <- log(rangeU)
 lrangeV   <-log(rangeV)
-
 taue1  <- mean(sapply(Y1, sd)^2)
 taue2  <- mean(sapply(Y2, sd)^2)
 sigmaU   <- rep(taue1,nt)
 sigmaV   <- rep(taue1,nt)
-A      <- rep(1,nt)
+A      <- rep(0,nt)
 Z1     <- matrix(0,n1,nt)
 Z2     <- matrix(0,n2,nt)
 Ys1    <- matrix(0,n1,nt)
@@ -100,20 +101,32 @@ Ys2    <- matrix(0,n2,nt)
 
 # Keep track of stuff
 
-keep_theta  <- array(0,dim=c(iters,9,nt))
-keep.u1= array(NA,dim=c(iters,n1,nt))
-keep.u2= array(NA,dim=c(iters,n2,nt))
-keep.v2= array(NA,dim=c(iters,n2,nt))
-keep.Y1.M= array(NA,dim=c(iters,n1,nt))
-keep.Y2.M= array(NA,dim=c(iters,n2,nt))
+# All parameters: "rangeu","rangev","sigmaU","sigmaV","taue1","taue2","A",'beta1','beta2'
+# Parameters that are different for each spectrum: sigmaU, sigmaV, A, beta1, beta2
+## Note: beta1 and beta2 now stay the same
+# Dimension of data structure: nt * iterations
+keep.sigmaU = array(0, dim = c(nt, iters))
+keep.sigmaV = array(0, dim = c(nt, iters))
+keep.A = array(0, dim = c(nt, iters))
+# Parameters that stay the same: rangeU, rangeV, taus1, taus2
+# Dimension of data structure: 1 * iterations
+keep.rangeU = rep(0, iters)
+keep.rangeV = rep(0, iters)
+keep.taus1 = rep(0, iters)
+keep.taus2 = rep(0, iters)
+keep.taue1 = rep(0, iters)
+keep.taue2 = rep(0, iters)
+# Vector parameters; Dimension of data structure: #stations * nt * iters
+keep.u1= array(0,dim=c(n1,nt,iters))
+keep.u2= array(0,dim=c(n2,nt,iters))
+keep.v2= array(0,dim=c(n2,nt,iters))
+keep.Y1.M= array(0,dim=c(n1,nt,iters))
+keep.Y2.M= array(0,dim=c(n2,nt,iters))
 
 start = proc.time()[3]
 
-# 
 for(iter in 1:iters){
-  
   for(ttt in 1:thin){
-    
     ##############################################:
     ####     Transform to spatial land       #####:
     ##############################################:
@@ -155,13 +168,13 @@ for(iter in 1:iters){
     ##############################################:
     
     for(i in 1:n1){
-      Ys1[i,] <- fft_real(as.numeric(Y1[i,]-beta1))
+      Ys1[i,] <- fft_real(as.numeric(Y1[i,] - beta1))
     }
     for(i in 1:n2){
-      Ys2[i,] <- fft_real(as.numeric(Y2[i,]-beta2))
+      Ys2[i,] <- fft_real(as.numeric(Y2[i,] - beta2))
     }
-    taus1 <- const*taue1
-    taus2 <- const*taue2
+    taus1 <- taue1
+    taus2 <- taue2
     
     ##############################################:
     ####      LMC TERMS (spectral space)     #####:
@@ -176,8 +189,10 @@ for(iter in 1:iters){
     S1_D   = ES1$values
     S1inv = S1_G%*%diag(1/S1_D)%*%t(S1_G)
     A1 = S12 %*% solve(S22)
+    S1invA1 = S1inv %*% A1
     # S1inv = G * diag(1/D) * G'
     # inverse = G * [1/taus1 + 1/sigmaU * diag(1/D)]^{-1} * G'
+
     
     S11inv=solve(S11)
     S2 = S22 - S21 %*% S11inv %*% S12
@@ -186,6 +201,8 @@ for(iter in 1:iters){
     S2_G = ES2$vectors
     S2_D = ES2$values
     S2inv = S2_G%*%diag(1/S2_D)%*%t(S2_G)
+    S2invA2 = S2inv %*% A2
+
     
     # G: eigenvectors
     # D: eigenvalues
@@ -194,29 +211,32 @@ for(iter in 1:iters){
     V_G = eigV$G
     V_D = eigV$D
     
+    S2Vinv= invV(dv2,rangeV)$Q
+
+    # Gibbs sampling
     for (r in 1:nt) # for each spectral 
     {
       # # Sample U1
-      newDiag = diag(1/taus1 * diag(1, n1) + 1/sigmaU[r] * diag(1/S1_D))
+      newDiag = 1/taus1 + 1/sigmaU[r] * 1/S1_D
       sigmaU1 <- S1_G %*% diag(1/newDiag) %*% t(S1_G)
       # S1_G
-      meanU1 <- sigmaU1 %*% (1/taus1 * Ys1[,r] + 1/sigmaU[r] * S1inv %*% A1 %*% U2[,r])
-      U1[,r] <- as.vector(t(chol(sigmaU1)) %*% rnorm(n1)) + meanU1 # Generate U matrix with S1_G %*% Normal
+      meanU1 <- sigmaU1 %*% (1/taus1 * Ys1[,r] + 1/sigmaU[r] * S1invA1 %*% U2[,r])
+      U1[,r] = meanU1+S1_G%*%rnorm(n1, 0, 1/sqrt(newDiag))
       
       # # Sample U2
-      newDiag = diag(A[r]^2/taus2 * diag(1, n2) + 1/sigmaU[r] * diag(1/S2_D))
+      newDiag = A[r]^2/taus2 + 1/sigmaU[r] * 1/S2_D
       sigmaU2 <- S2_G %*% diag(1/newDiag) %*% t(S2_G)
 
       meanU2 <- sigmaU2 %*% (1/taus2 * A[r] * Ys2[,r] - 1/taus2 * A[r] * V2[,r] +
-                               1/sigmaU[r] * S2inv %*% A2 %*% U1[,r])
-      U2[,r] <- as.vector(t(chol(sigmaU2)) %*% rnorm(n2)) + meanU2
+                               1/sigmaU[r] * S2invA2 %*% U1[,r])
+      U2[,r] = meanU2+S2_G%*%rnorm(n2,0,1/sqrt(newDiag))
       
       # # Sample V2
-      newDiag = diag(1/sigmaV[r] * diag(1/V_D) + 1/taus2 * diag(1, n2))
+      newDiag = 1/sigmaV[r] * 1/V_D + 1/taus2
       sigmaV2 = V_G %*% diag(1/newDiag) %*% t(V_G)
 
       meanV2 <- sigmaV2 %*% (1/taus2 * Ys2[,r] - 1/taus2 * A[r] * U2[,r])
-      V2[,r] <- as.vector(t(chol(sigmaV2)) %*% rnorm(n2)) + meanV2
+      V2[,r] =meanV2+V_G%*%rnorm(n2,0,1/sqrt(newDiag))      
       
       # # Sample Al
       sigmaAl <- solve(1/taus2 * t(U2[,r]) %*% U2[,r] + 1/5)
@@ -240,16 +260,17 @@ for(iter in 1:iters){
     ###############################################
     # Ru should be a matrix and use data from all spectrum
     # Sweep operation to get rid of variance
-    
-    Ru = as.vector(U_sim)/sqrt(sigmaU[r])
-    Rv = as.vector(V2[,r])/sqrt(sigmaV[r])
+    Ru=sweep(rbind(U1,U2),2,FUN='/',sigmaU)
+    Rv=sweep(V2,2,FUN='/',sigmaV)
     
     # range1
     Ms=exp_corr(d,range=exp(lrangeU))
-    curll = dmvnorm(Ru,rep(0,n1+n2),Ms,log=TRUE)
+    curll = sum(apply(Ru,2,dmvnorm,mean=rep(0,n1+n2),sigma=Ms,log=TRUE))
+    #curll = dmvnorm(Ru,rep(0,n1+n2),Ms,log=TRUE)
     canrange1 = rnorm(1,lrangeU,0.5)
     canM = exp_corr(d,range=exp(canrange1))
-    canll = dmvnorm(Ru,rep(0,n1+n2),canM,log=TRUE)
+    canll = sum(apply(Ru,2,dmvnorm,mean=rep(0,n1+n2),sigma=canM,log=TRUE))
+    #canll = dmvnorm(Ru,rep(0,n1+n2),canM,log=TRUE)
     
     MH1 <- canll-curll+dnorm(canrange1,log=TRUE)-dnorm(lrangeU,log=TRUE)
     
@@ -260,10 +281,12 @@ for(iter in 1:iters){
     
     # range2
     Ss=exp_corr(dv2,range = exp(lrangeV))
-    curll2 = dmvnorm(Rv,rep(0,n2),Ss,log=TRUE)
+    #curll2 = dmvnorm(Rv,rep(0,n2),Ss,log=TRUE)
+    curll2 = sum(apply(Rv,2,dmvnorm,mean=rep(0,n2),sigma=Ss,log=TRUE))
     canrange2 = rnorm(1,lrangeV,0.5)
     canS = exp_corr(dv2,range=exp(canrange2))
-    canll2 = dmvnorm(Rv,rep(0,n2),canS,log=TRUE)
+    #canll2 = dmvnorm(Rv,rep(0,n2),canS,log=TRUE)
+    canll2 = sum(apply(Rv,2,dmvnorm,mean=rep(0,n2),sigma=canS,log=TRUE))
     
     MH2 <- canll2-curll2+dnorm(canrange2,log=TRUE)-dnorm(lrangeV,log=TRUE)
     
@@ -273,32 +296,60 @@ for(iter in 1:iters){
     }
     rangeU = exp(lrangeU)
     rangeV = exp(lrangeV)
-    
-  } # end thin
+  } # Ene of thin
+  # Update range parameter
   
   ##############################################:
   #####        KEEP TRACK OF STUFF       #######:
   ##############################################:
   
+  keep.rangeU[iter] = rangeU
+  keep.rangeV[iter] = rangeV
+  keep.sigmaU[, iter] = sigmaU
+  keep.sigmaV[, iter] = sigmaV
+  keep.taus1[iter] = taus1
+  keep.taus2[iter] = taus2
+  keep.taue1[iter] = taue1
+  keep.taue2[iter] = taue2
+  keep.A[, iter] = A
   
-  keep_theta[iter, 1,]  <- rep(rangeU,nt)
-  keep_theta[iter, 2,]  <- rep(rangeV,nt)
-  keep_theta[iter, 3,]  <- sigmaU
-  keep_theta[iter, 4,]  <- sigmaV
-  keep_theta[iter, 5,]  <- rep(taue1,nt) # because we have the same tau for all spectrums 
-  keep_theta[iter, 6,]  <- rep(taue2,nt)
-  keep_theta[iter, 7,]  <- A
-  keep_theta[iter, 8,]  <- rep(beta1,nt)
-  keep_theta[iter, 9,]  <- rep(beta2,nt)
+  keep.u1[,,iter]=U1
+  keep.u2[,,iter]=U2
+  keep.v2[,,iter]=V2
   
-  keep.u1[iter,,]=U1
-  keep.u2[iter,,]=U2
-  keep.v2[iter,,]=V2
-  
-  keep.Y1.M[iter,,]=as.matrix(Y1)
-  keep.Y2.M[iter,,]=as.matrix(Y2)
+  keep.Y1.M[,,iter]=as.matrix(Y1)
+  keep.Y2.M[,,iter]=as.matrix(Y2)
 }
 proc.time()[3] - start
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ### Results 
 
