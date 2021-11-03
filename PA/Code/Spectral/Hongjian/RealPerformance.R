@@ -227,7 +227,7 @@ for(iter in 1:iters){
       newDiag = A[r]^2/taus2 + 1/sigmaU[r] * 1/S2_D
       sigmaU2 <- S2_G %*% diag(1/newDiag) %*% t(S2_G)
 
-      meanU2 <- sigmaU2 %*% (1/taus2 * A[r] * Ys2[,r] - 1/taus2 * A[r] * V2[,r] +
+      meanU2 <- sigmaU2 %*% (1/taus2 * A[r] * Ys2[,r] - A[r] * V2[,r] +
                                1/sigmaU[r] * S2invA2 %*% U1[,r])
       U2[,r] = meanU2+S2_G%*%rnorm(n2,0,1/sqrt(newDiag))
       
