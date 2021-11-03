@@ -173,8 +173,8 @@ for(iter in 1:iters){
     for(i in 1:n2){
       Ys2[i,] <- fft_real(as.numeric(Y2[i,] - beta2))
     }
-    taus1 <- taue1
-    taus2 <- taue2
+    taus1 <- nt/2 * taue1
+    taus2 <- nt/2 * taue2
     
     ##############################################:
     ####      LMC TERMS (spectral space)     #####:
@@ -260,8 +260,12 @@ for(iter in 1:iters){
     ###############################################
     # Ru should be a matrix and use data from all spectrum
     # Sweep operation to get rid of variance
-    Ru=sweep(rbind(U1,U2),2,FUN='/',sigmaU)
-    Rv=sweep(V2,2,FUN='/',sigmaV)
+    #Ru=sweep(rbind(U1,U2),2,FUN='/',sigmaU)
+    #Rv=sweep(V2,2,FUN='/',sigmaV)
+    
+    Ru = as.vector(U_sim)/sqrt(sigmaU[r])
+    Rv = as.vector(V2[,r])/sqrt(sigmaV[r])
+    
     
     # range1
     Ms=exp_corr(d,range=exp(lrangeU))
@@ -351,58 +355,8 @@ proc.time()[3] - start
 
 
 
-### Results 
-
-# create data frame 
-P=c("rangeu","rangev","sigmaU","sigmaV","taue1","taue2","A",'beta1','beta2')
-rv=list(rep(rangeU,nt),rep(rangeV,nt),sigmaU,sigmaV,rep(taue1,nt),rep(taue2,nt),A,
-        rep(beta1,nt),rep(beta2,nt))
-values=c()
-param=c()
-n.iter=c()
-time=c()
-realvalues=c()
-for(i in 1:9)
-{
-  for (j in 1:nt)
-  {
-    values=c(values,keep_theta[,i,j])
-    param=c(param,rep(P[i],iters))
-    n.iter=c(n.iter,rep(1:iters))
-    time=c(time,rep(j,iters))
-    realvalues=c(realvalues,rep(rv[[i]][j],iters))
-    
-  }
-}
 # 19 timestamps - 10 min
 # 43 timestamps - 19
 # 67 TS - 28 min
-
-
-mcmc.results=data.frame(n.iter,values,param,time,realvalues)
-mcmc.results$n.iter=as.numeric(mcmc.results$n.iter)
-
-#al 
-ggplot(mcmc.results %>% filter(param=='A',time%in%seq(1:10)))+geom_line(aes(x=n.iter,y=values))+
-  facet_wrap(~time, scales = "free")+theme_bw()+
-  ggtitle('Al values')
-#tau1
-ggplot(mcmc.results %>% filter(param=='taue1'))+geom_line(aes(x=n.iter,y=values))+theme_bw()+ggtitle('tau1 values')
-#tau2
-ggplot(mcmc.results %>% filter(param=='taue2'))+geom_line(aes(x=n.iter,y=values))+theme_bw()+ggtitle('tau2 values')
-
-#sigmau
-ggplot(mcmc.results %>% filter(param=='sigmaU'))+geom_line(aes(x=n.iter,y=values))+theme_bw()+ggtitle('sigma1 values')+
-  facet_wrap(~time,scales = "free")
-
-#sigmav
-ggplot(mcmc.results %>% filter(param=='sigmaV'))+geom_line(aes(x=n.iter,y=values))+theme_bw()+ggtitle('sigma2 values')+
-  facet_wrap(~time,scales = "free")
-
-#phou
-ggplot(mcmc.results %>% filter(param=='rangeu'))+geom_line(aes(x=n.iter,y=values))+theme_bw()+ggtitle('phou values')
-
-ggplot(mcmc.results %>% filter(param=='rangev'))+geom_line(aes(x=n.iter,y=values))+theme_bw()+
-  ggtitle('phov')
 
 

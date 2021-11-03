@@ -3,7 +3,7 @@ library(mvtnorm)
 library(MASS)
 library(truncnorm)
 library(invgamma)
-setwd("/Users/hongjianyang/Research/PAStudy/PA/Code/Spectral/")
+setwd("/Users/hongjianyang/Research/PAStudy/PA/Code/Spectral/Hongjian")
 source('SimData.R')
 
 ################################################
@@ -31,7 +31,7 @@ log_post <- function(Y, n, range, distance) {
 ################################################
 ########## MH within Gibbs
 ################################################
-iters = 10000
+iters = 3000
 # Generate Initial Values for U1, U2, V2, Al, and sigmas
 U1_init <- as.vector(rnorm(n1))
 U2_init <- as.vector(rnorm(n2))
@@ -117,26 +117,37 @@ for(i in 1:iters){
   S12 <- currS[1:n1, (n1+1):(n1+n2)]
   S21 <- currS[(n1+1):(n1+n2), 1:n1]
   S22 <- currS[(n1+1):(n1+n2), (n1+1):(n1+n2)]
-  # U1
+  # U1 and its eigens
   S1 <- S11 - S12 %*% solve(S22) %*% S21
-  S1inv <- solve(S1)
+  eigS1 <- eigen(S1)
+  S1_G = eigS1$vectors
+  S1_D = eigS1$values
+  S1inv <- S1_G %*% diag(1/S1_D) %*% t(S1_G)
+  
   A1 <- S12 %*% solve(S22)
   # U2
   S2 <- S22 - S21 %*% solve(S11) %*% S12
   A2 <- S21 %*% solve(S11)
-  S2inv <- solve(S2)
+  eigS2 = eigen(S2)
+  S2_G = eigS2$vectors
+  S2_D = eigS2$values
+  
+  S2inv <- S2_G %*% diag(1/S2_D) %*% t(S2_G)
   
   # Sample U1
-  sigmaU1 <- solve(1/tau1_sim * diag(1, n1) + 1/sig1_sim * S1inv)
+  newDiag = 1/tau1_sim + 1/sig1_sim * 1/S1_D
+  sigmaU1 <- S1_G %*% diag(1/newDiag) %*% t(S1_G)
   meanU1 <- sigmaU1 %*% (1/tau1_sim * Y1 + 1/sig1_sim * S1inv %*% A1 %*% U2_sim)
-  U1_sim <- as.vector(t(chol(sigmaU1)) %*% rnorm(n1)) + meanU1
+  U1_sim <- meanU1+S1_G%*%rnorm(n1, 0, 1/sqrt(newDiag))
   U1_sim_all[,i] = U1_sim
   
   # Sample U2
+  newDiag = Al_sim^2/tau2_sim + 1/sig1_sim * 1/S2_D
+  sigmaU2 <- S2_G %*% diag(1/newDiag) %*% t(S2_G)
   sigmaU2 <- solve(Al_sim^2/tau2_sim * diag(1, n2) + 1/sig1_sim * S2inv)
-  meanU2 <- sigmaU2 %*% (1/tau2_sim * Al_sim * Y2 - 1/tau2_sim * Al_sim * V2_sim + 
+  meanU2 <- sigmaU2 %*% (1/tau2_sim * Al_sim * Y2 - Al_sim * V2_sim + 
                            1/sig1_sim * S2inv %*% A2 %*% U1_sim)
-  U2_sim <- as.vector(t(chol(sigmaU2)) %*% rnorm(n2)) + meanU2
+  U2_sim <- meanU2+S2_G%*%rnorm(n2,0,1/sqrt(newDiag))
   U2_sim_all[,i] = U2_sim
   
   # Sample V2
