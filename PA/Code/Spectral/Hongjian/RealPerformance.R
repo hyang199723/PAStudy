@@ -85,8 +85,8 @@ Y2[m2] <- beta2
 U1     <- matrix(0,n1,nt)
 U2     <- matrix(0,n2,nt)
 V2     <- matrix(0,n2,nt)
-rangeU  <- exp(mean_rho)
-rangeV   <- exp(mean_rho)
+rangeU  <- 0.2
+rangeV   <- 0.2
 lrangeU  <- log(rangeU)
 lrangeV   <-log(rangeV)
 taue1  <- mean(sapply(Y1, sd)^2)
@@ -160,8 +160,8 @@ for(iter in 1:iters){
     ####     ERROR VARIANCES (real space)    #####:
     ##############################################:
     # full conditionals for taue1 and taue2 
-    taue1 <- 1/rgamma(1,n1*nt/2+0.01,sum((Y1-beta1-Z1)^2)/2+0.01)
-    taue2 <- 1/rgamma(1,n2*nt/2+0.01,sum((Y2-beta2-Z2)^2)/2+0.01)
+    taue1 <- 1/rgamma(1,n1*nt/2+1,sum((Y1-beta1-Z1)^2)/2+1)
+    taue2 <- 1/rgamma(1,n2*nt/2+1,sum((Y2-beta2-Z2)^2)/2+1)
     # 
     ##############################################:
     ####     Transform to spectral land      #####:
@@ -173,8 +173,8 @@ for(iter in 1:iters){
     for(i in 1:n2){
       Ys2[i,] <- fft_real(as.numeric(Y2[i,] - beta2))
     }
-    taus1 <- nt/2 * taue1
-    taus2 <- nt/2 * taue2
+    taus1 <- nt / 2 *taue1
+    taus2 <- nt / 2 *taue2
     
     ##############################################:
     ####      LMC TERMS (spectral space)     #####:
@@ -260,20 +260,22 @@ for(iter in 1:iters){
     ###############################################
     # Ru should be a matrix and use data from all spectrum
     # Sweep operation to get rid of variance
-    #Ru=sweep(rbind(U1,U2),2,FUN='/',sigmaU)
-    #Rv=sweep(V2,2,FUN='/',sigmaV)
+    Ru=sweep(rbind(U1,U2),2,FUN='/',sqrt(sigmaU))
+    Rv=sweep(V2,2,FUN='/',sqrt(sigmaV))
     
-    Ru = as.vector(U_sim)/sqrt(sigmaU[r])
-    Rv = as.vector(V2[,r])/sqrt(sigmaV[r])
+    #Ru = as.vector(U_sim)/sqrt(sigmaU[r])
+    #Rv = as.vector(V2[,r])/sqrt(sigmaV[r])
     
     
     # range1
     Ms=exp_corr(d,range=exp(lrangeU))
-    curll = sum(apply(Ru,2,dmvnorm,mean=rep(0,n1+n2),sigma=Ms,log=TRUE))
+    #curll = sum(apply(Ru,2,dmvnorm,mean=rep(0,n1+n2),sigma=Ms,log=TRUE))
+    curll = sum(dmvnorm(t(Ru), mean=rep(0,n1+n2),sigma=Ms,log=TRUE))
     #curll = dmvnorm(Ru,rep(0,n1+n2),Ms,log=TRUE)
     canrange1 = rnorm(1,lrangeU,0.5)
     canM = exp_corr(d,range=exp(canrange1))
-    canll = sum(apply(Ru,2,dmvnorm,mean=rep(0,n1+n2),sigma=canM,log=TRUE))
+    #canll = sum(apply(Ru,2,dmvnorm,mean=rep(0,n1+n2),sigma=canM,log=TRUE))
+    canll = sum(dmvnorm(t(Ru), mean=rep(0,n1+n2),sigma=canM,log=TRUE))
     #canll = dmvnorm(Ru,rep(0,n1+n2),canM,log=TRUE)
     
     MH1 <- canll-curll+dnorm(canrange1,log=TRUE)-dnorm(lrangeU,log=TRUE)
@@ -286,11 +288,12 @@ for(iter in 1:iters){
     # range2
     Ss=exp_corr(dv2,range = exp(lrangeV))
     #curll2 = dmvnorm(Rv,rep(0,n2),Ss,log=TRUE)
-    curll2 = sum(apply(Rv,2,dmvnorm,mean=rep(0,n2),sigma=Ss,log=TRUE))
+    #curll2 = sum(apply(Rv,2,dmvnorm,mean=rep(0,n2),sigma=Ss,log=TRUE))
+    curll2 = sum(dmvnorm(t(Rv), mean = rep(0,n2),sigma=Ss,log=TRUE ))
     canrange2 = rnorm(1,lrangeV,0.5)
     canS = exp_corr(dv2,range=exp(canrange2))
     #canll2 = dmvnorm(Rv,rep(0,n2),canS,log=TRUE)
-    canll2 = sum(apply(Rv,2,dmvnorm,mean=rep(0,n2),sigma=canS,log=TRUE))
+    canll2 = sum(dmvnorm(t(Rv), mean = rep(0,n2),sigma=canS,log=TRUE ))
     
     MH2 <- canll2-curll2+dnorm(canrange2,log=TRUE)-dnorm(lrangeV,log=TRUE)
     
@@ -300,6 +303,7 @@ for(iter in 1:iters){
     }
     rangeU = exp(lrangeU)
     rangeV = exp(lrangeV)
+    print(rangeU)
   } # Ene of thin
   # Update range parameter
   
@@ -325,36 +329,6 @@ for(iter in 1:iters){
   keep.Y2.M[,,iter]=as.matrix(Y2)
 }
 proc.time()[3] - start
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # 19 timestamps - 10 min
 # 43 timestamps - 19
 # 67 TS - 28 min
