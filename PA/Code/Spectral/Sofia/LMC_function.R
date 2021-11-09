@@ -12,6 +12,46 @@ d        <- as.matrix(dist(rbind(s1,s2)))
 dv2 = as.matrix(dist(s2))
 const    <- nt/2
   
+# Keep track of stuff
+
+# All parameters: "rangeu","rangev","sigmaU","sigmaV","taue1","taue2","A",'beta1','beta2'
+
+# Parameters that are different for each spectrum: sigmaU, sigmaV, A, beta1, beta2
+# Dimension of data structure: nt * iterations
+keep.sigmaU = array(0, dim = c(nt, iters,thin))
+keep.sigmaV = array(0, dim = c(nt, iters,thin))
+keep.A = array(0, dim = c(nt, iters,thin))
+
+# Parameters that stay the same: rangeU, rangeV, taus1, taus2
+# Dimension of data structure: 1 * iterations
+keep.rangeU = matrix(0, iters,thin)
+keep.rangeV = matrix(0, iters,thin)
+keep.taus1 = matrix(0, iters,thin)
+keep.taus2 = matrix(0, iters,thin)
+keep.taue1 = matrix(0, iters,thin)
+keep.taue2 = matrix(0, iters,thin)
+# Vector parameters; Dimension of data structure: #stations * nt * iters
+# keep.u1= array(0,dim=c(n1,nt,iters))
+# keep.u2= array(0,dim=c(n2,nt,iters))
+# keep.v2= array(0,dim=c(n2,nt,iters))
+keep.Y1.M= array(0,dim=c(n1,nt,iters,thin))
+keep.Y2.M= array(0,dim=c(n2,nt,iters,thin))
+
+
+## get info for the ranges priors 
+
+priorR_mn1 <- log(max(d)) - 1.5
+priorR_sd1 <- 1
+
+priorR_mn2 <- log(max(dv2)) - 1.5
+priorR_sd2 <- 1
+
+
+
+# start MCMC
+start = proc.time()[3]
+
+for(ttt in 1:thin){
 # Mean imputation
 beta1 <- mean(colMeans(Y1,na.rm=TRUE))
 beta2 <- mean(colMeans(Y2,na.rm=TRUE))
@@ -36,37 +76,10 @@ sigmaU   <- rep(taue1,nt)
 sigmaV   <- rep(taue1,nt)
 A      <- rep(0,nt)
 
-# Keep track of stuff
-
-# All parameters: "rangeu","rangev","sigmaU","sigmaV","taue1","taue2","A",'beta1','beta2'
-
-# Parameters that are different for each spectrum: sigmaU, sigmaV, A, beta1, beta2
-# Dimension of data structure: nt * iterations
-keep.sigmaU = array(0, dim = c(nt, iters))
-keep.sigmaV = array(0, dim = c(nt, iters))
-keep.A = array(0, dim = c(nt, iters))
-
-# Parameters that stay the same: rangeU, rangeV, taus1, taus2
-# Dimension of data structure: 1 * iterations
-keep.rangeU = rep(0, iters)
-keep.rangeV = rep(0, iters)
-keep.taus1 = rep(0, iters)
-keep.taus2 = rep(0, iters)
-keep.taue1 = rep(0, iters)
-keep.taue2 = rep(0, iters)
-# Vector parameters; Dimension of data structure: #stations * nt * iters
-# keep.u1= array(0,dim=c(n1,nt,iters))
-# keep.u2= array(0,dim=c(n2,nt,iters))
-# keep.v2= array(0,dim=c(n2,nt,iters))
-keep.Y1.M= array(0,dim=c(n1,nt,iters))
-keep.Y2.M= array(0,dim=c(n2,nt,iters))
-
-# start MCMC
-start = proc.time()[3]
 
 for(iter in 1:iters){
 
-    for(ttt in 1:thin){
+   
     ##############################################:
     ####     Transform to spatial land       #####:
     ##############################################:
@@ -186,79 +199,80 @@ for(iter in 1:iters){
       a <- n2/2 + 1
       b <- (t(V2[,r]) %*% eigV$Q %*% V2[,r]) / 2 + 1 
       sigmaV[r] = 1/rgamma(1, a, b)
+      
     }
     
     ###############################################
     ##       Metropolis H: Range parameters      ##
     ###############################################
-    # Ru should be a matrix and use data from all spectrum
     # Sweep operation to get rid of variance
     Ru=sweep(rbind(U1,U2),2,FUN='/',sqrt(sigmaU))
     Rv=sweep(V2,2,FUN='/',sqrt(sigmaV))
-    
-    #Ru = as.vector(U_sim)/sqrt(sigmaU[r])
-    #Rv = as.vector(V2[,r])/sqrt(sigmaV[r])
-    
+
     # range1
     Ms=exp_corr(d,range=exp(lrangeU))
     #curll = sum(apply(Ru,2,dmvnorm,mean=rep(0,n1+n2),sigma=Ms,log=TRUE))
     curll = sum(dmvnorm(t(Ru), mean=rep(0,n1+n2),sigma=Ms,log=TRUE))
-    #curll = dmvnorm(Ru,rep(0,n1+n2),Ms,log=TRUE)
-    canrange1 = rnorm(1,lrangeU,0.5)
+    prior_curll=dnorm(lrangeU,mean=priorR_mn1,sd=priorR_sd1,log=TRUE)
+    
+    canrange1 = rnorm(1,lrangeU,0.1)
     canM = exp_corr(d,range=exp(canrange1))
     #canll = sum(apply(Ru,2,dmvnorm,mean=rep(0,n1+n2),sigma=canM,log=TRUE))
     canll = sum(dmvnorm(t(Ru), mean=rep(0,n1+n2),sigma=canM,log=TRUE))
-    #canll = dmvnorm(Ru,rep(0,n1+n2),canM,log=TRUE)
-    
-    MH1 <- canll-curll+dnorm(canrange1,log=TRUE)-dnorm(lrangeU,log=TRUE)
-    
+    prior_canll=dnorm(canrange1,mean=priorR_mn1,sd=priorR_sd1,log=TRUE)
+
+    MH1 <- canll-curll+prior_canll-prior_curll+dnorm(canrange1,log=TRUE)-dnorm(lrangeU,log=TRUE)
+
     if (log(runif(1))<MH1)
     {
       lrangeU=canrange1
     }
-    
+
     # range2
     Ss=exp_corr(dv2,range = exp(lrangeV))
-    #curll2 = dmvnorm(Rv,rep(0,n2),Ss,log=TRUE)
     #curll2 = sum(apply(Rv,2,dmvnorm,mean=rep(0,n2),sigma=Ss,log=TRUE))
     curll2 = sum(dmvnorm(t(Rv), mean = rep(0,n2),sigma=Ss,log=TRUE ))
-    canrange2 = rnorm(1,lrangeV,0.5)
+    prior_curll2=dnorm(lrangeV,mean=priorR_mn2,sd=priorR_sd2,log=TRUE)
+    
+    canrange2 = rnorm(1,lrangeV,0.1)
     canS = exp_corr(dv2,range=exp(canrange2))
     #canll2 = dmvnorm(Rv,rep(0,n2),canS,log=TRUE)
     canll2 = sum(dmvnorm(t(Rv), mean = rep(0,n2),sigma=canS,log=TRUE ))
-    
-    MH2 <- canll2-curll2+dnorm(canrange2,log=TRUE)-dnorm(lrangeV,log=TRUE)
-    
+    prior_canll2=dnorm(canrange2,mean=priorR_mn2,sd=priorR_sd2,log=TRUE)
+
+    MH2 <- canll2-curll2+prior_canll2-prior_curll2+dnorm(canrange2,log=TRUE)-dnorm(lrangeV,log=TRUE)
+
     if (log(runif(1))<MH2)
     {
       lrangeV=canrange2
     }
     rangeU = exp(lrangeU)
     rangeV = exp(lrangeV)
-    } # Ene of thin
-  # Update range parameter
+
+ 
 
   ##############################################:
   #####        KEEP TRACK OF STUFF       #######:
   ##############################################:
   
-  keep.rangeU[iter] = rangeU
-  keep.rangeV[iter] = rangeV
-  keep.sigmaU[, iter] = sigmaU
-  keep.sigmaV[, iter] = sigmaV
-  keep.taus1[iter] = taus1
-  keep.taus2[iter] = taus2
-  keep.taue1[iter] = taue1
-  keep.taue2[iter] = taue2
-  keep.A[, iter] = A
+  keep.rangeU[iter,ttt] = rangeU
+  keep.rangeV[iter,ttt] = rangeV
+  keep.sigmaU[, iter,ttt] = sigmaU
+  keep.sigmaV[, iter,ttt] = sigmaV
+  keep.taus1[iter,ttt] = taus1
+  keep.taus2[iter,ttt] = taus2
+  keep.taue1[iter,ttt] = taue1
+  keep.taue2[iter,ttt] = taue2
+  keep.A[, iter,ttt] = A
   
   # keep.u1[,,iter]=U1
   # keep.u2[,,iter]=U2
   # keep.v2[,,iter]=V2
   
-  keep.Y1.M[,,iter]=as.matrix(Y1)
-  keep.Y2.M[,,iter]=as.matrix(Y2)
+  keep.Y1.M[,,iter,ttt]=as.matrix(Y1)
+  keep.Y2.M[,,iter,ttt]=as.matrix(Y2)
   #print(iter)
+  } # End of thin
 }
 print(proc.time()[3] - start)
 
@@ -326,9 +340,9 @@ Compact.LMC_fit=function(Y1,Y2, s1,s2,
   keep.taue1 = rep(0, iters)
   keep.taue2 = rep(0, iters)
   # Vector parameters; Dimension of data structure: #stations * nt * iters
-  # keep.u1= array(0,dim=c(n1,nt,iters))
-  # keep.u2= array(0,dim=c(n2,nt,iters))
-  # keep.v2= array(0,dim=c(n2,nt,iters))
+  keep.u1= array(0,dim=c(n1,nt,iters))
+  keep.u2= array(0,dim=c(n2,nt,iters))
+  keep.v2= array(0,dim=c(n2,nt,iters))
   keep.Y1.M= array(0,dim=c(n1,nt,iters))
   keep.Y2.M= array(0,dim=c(n2,nt,iters))
   
@@ -451,11 +465,10 @@ Compact.LMC_fit=function(Y1,Y2, s1,s2,
       Mfs2=sweep((GYs2),1,FUN='*',A)/taus2- sweep(GSV2,2,FUN='*',A)/taus2+sweep(GSU1,2,FUN='/',sigmaU)
       Mean.P2=sweep(Mfs2,1,FUN='/',ND2)
       U2 = S2_G%*%(Mean.P2+E2)
-      
+
       GVU2 <- t(V_G)%*%U2
       U_sim=rbind(U1,U2)
-      
-      
+
       # Sample V2
       ND3=t(apply(as.matrix(1/V_D),1,FUN='*',1/sigmaV))+1/taus2
       Mfs3=GVYs2/taus2- sweep(GVU2,1,FUN='*',A)/taus2
@@ -522,26 +535,23 @@ Compact.LMC_fit=function(Y1,Y2, s1,s2,
       ###############################################
       ##       Metropolis H: Range parameters      ##
       ###############################################
-      # Ru should be a matrix and use data from all spectrum
       # Sweep operation to get rid of variance
       Ru=sweep(rbind(U1,U2),2,FUN='/',sqrt(sigmaU))
       Rv=sweep(V2,2,FUN='/',sqrt(sigmaV))
-      
-      #Ru = as.vector(U_sim)/sqrt(sigmaU[r])
-      #Rv = as.vector(V2[,r])/sqrt(sigmaV[r])
       
       # range1
       Ms=exp_corr(d,range=exp(lrangeU))
       #curll = sum(apply(Ru,2,dmvnorm,mean=rep(0,n1+n2),sigma=Ms,log=TRUE))
       curll = sum(dmvnorm(t(Ru), mean=rep(0,n1+n2),sigma=Ms,log=TRUE))
-      #curll = dmvnorm(Ru,rep(0,n1+n2),Ms,log=TRUE)
-      canrange1 = rnorm(1,lrangeU,0.5)
+      prior_curll=dnorm(lrangeU,mean=priorR_mn1,sd=priorR_sd1,log=TRUE)
+      
+      canrange1 = rnorm(1,lrangeU,0.1)
       canM = exp_corr(d,range=exp(canrange1))
       #canll = sum(apply(Ru,2,dmvnorm,mean=rep(0,n1+n2),sigma=canM,log=TRUE))
       canll = sum(dmvnorm(t(Ru), mean=rep(0,n1+n2),sigma=canM,log=TRUE))
-      #canll = dmvnorm(Ru,rep(0,n1+n2),canM,log=TRUE)
+      prior_canll=dnorm(canrange1,mean=priorR_mn1,sd=priorR_sd1,log=TRUE)
       
-      MH1 <- canll-curll+dnorm(canrange1,log=TRUE)-dnorm(lrangeU,log=TRUE)
+      MH1 <- canll-curll+prior_canll-prior_curll+dnorm(canrange1,log=TRUE)-dnorm(lrangeU,log=TRUE)
       
       if (log(runif(1))<MH1)
       {
@@ -550,15 +560,17 @@ Compact.LMC_fit=function(Y1,Y2, s1,s2,
       
       # range2
       Ss=exp_corr(dv2,range = exp(lrangeV))
-      #curll2 = dmvnorm(Rv,rep(0,n2),Ss,log=TRUE)
       #curll2 = sum(apply(Rv,2,dmvnorm,mean=rep(0,n2),sigma=Ss,log=TRUE))
       curll2 = sum(dmvnorm(t(Rv), mean = rep(0,n2),sigma=Ss,log=TRUE ))
-      canrange2 = rnorm(1,lrangeV,0.5)
+      prior_curll2=dnorm(lrangeV,mean=priorR_mn2,sd=priorR_sd2,log=TRUE)
+      
+      canrange2 = rnorm(1,lrangeV,0.1)
       canS = exp_corr(dv2,range=exp(canrange2))
       #canll2 = dmvnorm(Rv,rep(0,n2),canS,log=TRUE)
       canll2 = sum(dmvnorm(t(Rv), mean = rep(0,n2),sigma=canS,log=TRUE ))
+      prior_canll2=dnorm(canrange2,mean=priorR_mn2,sd=priorR_sd2,log=TRUE)
       
-      MH2 <- canll2-curll2+dnorm(canrange2,log=TRUE)-dnorm(lrangeV,log=TRUE)
+      MH2 <- canll2-curll2+prior_canll2-prior_curll2+dnorm(canrange2,log=TRUE)-dnorm(lrangeV,log=TRUE)
       
       if (log(runif(1))<MH2)
       {
@@ -566,8 +578,8 @@ Compact.LMC_fit=function(Y1,Y2, s1,s2,
       }
       rangeU = exp(lrangeU)
       rangeV = exp(lrangeV)
-    } # Ene of thin
-    # Update range parameter
+      
+      
     
     ##############################################:
     #####        KEEP TRACK OF STUFF       #######:
@@ -583,10 +595,10 @@ Compact.LMC_fit=function(Y1,Y2, s1,s2,
     keep.taue2[iter] = taue2
     keep.A[, iter] = A
     
-    # keep.u1[,,iter]=U1
-    # keep.u2[,,iter]=U2
-    # keep.v2[,,iter]=V2
-    
+    keep.u1[,,iter]=U1
+    keep.u2[,,iter]=U2
+    keep.v2[,,iter]=V2
+
     keep.Y1.M[,,iter]=as.matrix(Y1)
     keep.Y2.M[,,iter]=as.matrix(Y2)
     #print(iter)
