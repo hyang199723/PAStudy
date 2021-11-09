@@ -37,52 +37,122 @@ Y1 = as.matrix(data.frame(frmTS))
 colnames(Y1)=NULL
 Y2 = as.matrix(data.frame(paTS))
 colnames(Y2)=NULL
+                      
 
-#exit2=Compact.LMC_fit(Y1,Y2, s1,s2)
+                        #####################
+                        ### Fit the model ###
+                        #####################
+
+#exit2=Compact.LMC_fit(Y1,Y2, s1,s2,iters=6000)
 #2042.504--> simudata 
-exit1=LMC_fit(Y1,Y2, s1,s2)
+exit1=LMC_fit(Y1,Y2, s1,s2,iters=5000,thin=4)
 #2389.701
 
-# Plot results
-par(mfrow=c(2,1))
-plot(exit1$rangeU,type='l')
-plot(exit2$rangeU,type='l')
-abline(h=rangeu,col='red')  
+                    #################################
+                    ### Analyse Exit of the model ###
+                    #################################
 
-par(mfrow=c(2,1))
-plot(exit2$rangeV,type='l')
-plot(exit1$rangeV,type='l')
-abline(h=rangev,col='red')  
+# Create data frame
+nchain=c()
+param=c()
+val=c()
+iter=c()
+freq=c()
 
-plot(exit1$tau1,type='l')
-plot(exit2$tau1,type='l')
-abline(h=tau1,col='red')  
+nchain2=c()
+param2=c()
+val2=c()
+iter2=c()
+freq2=c()
 
-plot(exit1$tau2,type='l')
-plot(exit2$tau2,type='l')
-abline(h=tau2,col='red')  
-
-par(mfrow=c(3,4))
-for (i in 1:dim(Y1)[2])
+for (i in 1:thin)
 {
-  plot(exit1$A[i,],type='l')
-  #abline(h=al[i],col='red')  
+  #rangeU
+  val=c(val,exit1$rangeU[,i])
+  param=c(param,rep("rangeU",iters))
+  nchain=c(nchain,rep(i,iters))
+  iter=c(iter,1:iters)
+  freq=c(freq,rep(NA,iters))
+  #rangeV
+  val=c(val,exit1$rangeV[,i])
+  param=c(param,rep("rangeV",iters))
+  nchain=c(nchain,rep(i,iters))
+  iter=c(iter,1:iters)
+  freq=c(freq,rep(NA,iters))
+  #tau1 
+  val=c(val,exit1$tau1[,i])
+  param=c(param,rep("tau1",iters))
+  nchain=c(nchain,rep(i,iters))
+  iter=c(iter,1:iters)
+  freq=c(freq,rep(NA,iters))
+  #tau2
+  val=c(val,exit1$tau2[,i])
+  param=c(param,rep("tau2",iters))
+  nchain=c(nchain,rep(i,iters))
+  iter=c(iter,1:iters)
+  freq=c(freq,rep(NA,iters))
+  #A
+  val2=c(val2,as.vector(exit1$A[,,i]))
+  param2=c(param2,rep('A',ncol(Y2)*iters))
+  nchain2=c(nchain2,rep(i,ncol(Y2)*iters))
+  iter2=c(iter2,rep(1:iters,each=ncol(Y2)))
+  freq2=c(freq2,rep(1:ncol(Y2),iters))
+  #sigmaU
+  val2=c(val2,as.vector(exit1$sigmaU[,,i]))
+  param2=c(param2,rep('sigmaU',ncol(Y2)*iters))
+  nchain2=c(nchain2,rep(i,ncol(Y2)*iters))
+  iter2=c(iter2,rep(1:iters,each=ncol(Y2)))
+  freq2=c(freq2,rep(1:ncol(Y2),iters))
+  #sigmaV
+  val2=c(val2,as.vector(exit1$sigmaV[,,i]))
+  param2=c(param2,rep('sigmaV',ncol(Y2)*iters))
+  nchain2=c(nchain2,rep(i,ncol(Y2)*iters))
+  iter2=c(iter2,rep(1:iters,each=ncol(Y2)))
+  freq2=c(freq2,rep(1:ncol(Y2),iters))
+  
 }
 
-par(mfrow=c(3,4))
-for (i in 1:dim(Y1)[2])
-{
-  plot(exit1$sigmaU[i,],type='l')
-  #abline(h=sigmau[i],col='red')  
-}
+res1=data.frame(val,param,nchain,iter,freq)
+res2=data.frame(val=val2,param=param2,nchain=nchain2,iter=iter2,freq=freq2)
 
+res1$nchain=as.factor(res1$nchain)
+res2$nchain=as.factor(res2$nchain)
 
-par(mfrow=c(3,4))
-for (i in 1:dim(Y1)[2])
-{
-  plot(exit2$sigmaV[i,],type='l')
-  abline(h=sigmav[i],col='red')  
-}
+#plot range
+prang1=ggplot(res1 %>% filter(param=='rangeU'))+geom_line(aes(x=iter,y=val,col=nchain))+theme_bw()
+prang2=ggplot(res1 %>% filter(param=='rangeV'))+geom_line(aes(x=iter,y=val,col=nchain))+theme_bw()
+
+# ggsave('PostRange1.png',prang1)
+# ggsave('PostRange2.png',prang2)
+
+ptau1=ggplot(res1 %>% filter(param=='tau1'))+geom_line(aes(x=iter,y=val,col=nchain),alpha=0.5)+theme_bw()
+ptau2=ggplot(res1 %>% filter(param=='tau2'))+geom_line(aes(x=iter,y=val,col=nchain),alpha=0.5)+theme_bw()+ylim(c(0,1))
+
+# ggsave('PostTau1.png',ptau1)
+# ggsave('PostTau2.png',ptau2)
+
+# plots by freq
+freq1=1:round(dim(Y2)[2]/2)
+freq2=(round(dim(Y2)[2]/2)+1):dim(Y2)[2]
+
+pA_1=ggplot(res2%>% filter(param=='A',freq %in%freq1))+geom_line(aes(x=iter,y=val,col=nchain),alpha=0.5)+facet_wrap(~freq,scales='free')+theme_bw()
+pA_2=ggplot(res2%>% filter(param=='A',freq %in%freq2))+geom_line(aes(x=iter,y=val,col=nchain),alpha=0.5)+facet_wrap(~freq,scales='free')+theme_bw()
+
+# ggsave('PostA_frq1:15.png',pA_1)
+# ggsave('PostA_frq16:30.png',pA_2)
+
+psigmaU_1=ggplot(res2%>% filter(param=='sigmaU',freq %in%freq1))+geom_line(aes(x=iter,y=val,col=nchain),alpha=0.5)+facet_wrap(~freq,scales='free')+theme_bw()
+psigmaU_2=ggplot(res2%>% filter(param=='sigmaU',freq %in%freq2))+geom_line(aes(x=iter,y=val,col=nchain),alpha=0.5)+facet_wrap(~freq,scales='free')+theme_bw()
+
+# ggsave('PostSimaU_frq1:15.png',psigmaU_1)
+# ggsave('PostSimaU_frq16:30.png',psigmaU_2)
+
+psigmaV_1=ggplot(res2%>% filter(param=='sigmaV',freq %in%freq1))+geom_line(aes(x=iter,y=val,col=nchain),alpha=0.5)+facet_wrap(~freq,scales='free')+theme_bw()
+psigmaV_2=ggplot(res2%>% filter(param=='sigmaV',freq %in%freq2))+geom_line(aes(x=iter,y=val,col=nchain),alpha=0.5)+facet_wrap(~freq,scales='free')+theme_bw()
+
+# ggsave('PostSigmaV_frq1:15.png',psigmaV_1)
+# ggsave('PostSigmaV_frq16:30.png',psigmaV_2)
+
 
 ########################################################
 ############# Cross validation analysis ################
