@@ -1,6 +1,6 @@
 # This includes the main LMC functions
 # This script has two functions, LMC_fit and compact.LMC_fit
-# Last update: 11/18/2021
+# Last update: 11/19/2021
 LMC_fit=function(Y1,Y2, s1,s2,
                  mean_range=0, sd_range=1, mean_var=0, sd_var=1, mean_rho=0,
                  sd_rho=10, iters=3000, burn=1000, thin=1, update=10)
@@ -346,9 +346,15 @@ compact.LMC_fit=function(Y1,Y2, s1,s2,
   keep.v2= array(0,dim=c(n2,nt,iters))
   keep.Y1.M= array(0,dim=c(n1,nt,iters))
   keep.Y2.M= array(0,dim=c(n2,nt,iters))
+
   
-  # start MCMC
-  start = proc.time()[3]
+  ## get info for the ranges priors 
+  
+  priorR_mn1 <- log(max(d)) - 1.5
+  priorR_sd1 <- 1
+  
+  priorR_mn2 <- log(max(dv2)) - 1.5
+  priorR_sd2 <- 1
   
   # set some constant
   a1 <- (n2+n1)/2 + 1
@@ -438,9 +444,9 @@ compact.LMC_fit=function(Y1,Y2, s1,s2,
       
       # Gibbs sampling
       
-      E = matrix(rnorm(n1*n2),n1,nt)
-      E2 = matrix(rnorm(n1*n2),n2,nt)
-      E3 = matrix(rnorm(n1*n2),n2,nt)
+      E = matrix(rnorm(n1*nt),n1,nt)
+      E2 = matrix(rnorm(n2*nt),n2,nt)
+      E3 = matrix(rnorm(n2*nt),n2,nt)
       
       
       GYs1 <- t(S1_G)%*%Ys1
@@ -453,7 +459,10 @@ compact.LMC_fit=function(Y1,Y2, s1,s2,
       ND1=t(1/taus1 +apply(as.matrix(1/S1_D),1,FUN='*',1/sigmaU))
       ## Mean part with sweep function 
       Mfs=GYs1/taus1+sweep(GSU2,2,FUN='/',sigmaU)
-      Mean.P=sweep(Mfs,1,FUN='/',ND1)
+      
+      print(dim(Mfs))
+      print(dim(ND1))
+      Mean.P=sweep(Mfs,1,FUN='/',diag(ND1)) # change here
       U1 = S1_G%*%(Mean.P+E)
       
       
@@ -604,7 +613,6 @@ compact.LMC_fit=function(Y1,Y2, s1,s2,
     keep.Y2.M[,,iter]=as.matrix(Y2)
     #print(iter)
   }
-  print(proc.time()[3] - start)
   
   
   out=list(keep.rangeU,keep.rangeV,keep.sigmaU,keep.sigmaV,keep.taue1,keep.taue2,keep.A,keep.Y1.M,keep.Y2.M)

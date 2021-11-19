@@ -3,8 +3,7 @@
 # Last update: 11/18/2021
 LMC_fit=function(Y1,Y2, s1,s2,
                  mean_range=0, sd_range=1, mean_var=0, sd_var=1, mean_rho=0,
-                 sd_rho=10, iters=3000, burn=1000, thin=1, update=10)
-{
+                 sd_rho=10, iters=3000, burn=1000, thin=1, update=10) {
   n1       <- nrow(Y1)
   n2       <- nrow(Y2)
   nt       <- ncol(Y1)
@@ -283,8 +282,7 @@ LMC_fit=function(Y1,Y2, s1,s2,
 
 compact.LMC_fit=function(Y1,Y2, s1,s2,
                  mean_range=0, sd_range=1, mean_var=0, sd_var=1, mean_rho=0,
-                 sd_rho=10, iters=3000, burn=1000, thin=1, update=10)
-{
+                 sd_rho=10, iters=3000, burn=1000, thin=1, update=10) {
   n1       <- nrow(Y1)
   n2       <- nrow(Y2)
   nt       <- ncol(Y1)
@@ -342,6 +340,14 @@ compact.LMC_fit=function(Y1,Y2, s1,s2,
   keep.v2= array(0,dim=c(n2,nt,iters))
   keep.Y1.M= array(0,dim=c(n1,nt,iters))
   keep.Y2.M= array(0,dim=c(n2,nt,iters))
+  
+  ## get info for the ranges priors 
+  
+  priorR_mn1 <- log(max(d)) - 1.5
+  priorR_sd1 <- 1
+  
+  priorR_mn2 <- log(max(dv2)) - 1.5
+  priorR_sd2 <- 1
 
   # set some constant
   a1 <- (n2+n1)/2 + 1
