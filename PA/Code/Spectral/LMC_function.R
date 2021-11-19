@@ -51,6 +51,7 @@ LMC_fit=function(Y1,Y2, s1,s2,
 
 
   # start MCMC
+  start = proc.time()[3]
   for(ttt in 1:thin){
     # Mean imputation
     beta1 <- mean(colMeans(Y1,na.rm=TRUE))
@@ -274,6 +275,9 @@ LMC_fit=function(Y1,Y2, s1,s2,
       #print(iter)
     } # End of thin
   }
+  print(proc.time()[3] - start)
+
+
   out=list(keep.rangeU,keep.rangeV,keep.sigmaU,keep.sigmaV,keep.taue1,keep.taue2,keep.A,keep.Y1.M,keep.Y2.M)
   names(out)=c('rangeU','rangeV','sigmaU','sigmaV','tau1','tau2','A','Y1.m','Y2.m')
   return(out)
@@ -342,7 +346,10 @@ compact.LMC_fit=function(Y1,Y2, s1,s2,
   keep.v2= array(0,dim=c(n2,nt,iters))
   keep.Y1.M= array(0,dim=c(n1,nt,iters))
   keep.Y2.M= array(0,dim=c(n2,nt,iters))
-
+  
+  # start MCMC
+  start = proc.time()[3]
+  
   # set some constant
   a1 <- (n2+n1)/2 + 1
   a2 <- n2/2 + 1
@@ -597,6 +604,9 @@ compact.LMC_fit=function(Y1,Y2, s1,s2,
     keep.Y2.M[,,iter]=as.matrix(Y2)
     #print(iter)
   }
+  print(proc.time()[3] - start)
+  
+  
   out=list(keep.rangeU,keep.rangeV,keep.sigmaU,keep.sigmaV,keep.taue1,keep.taue2,keep.A,keep.Y1.M,keep.Y2.M)
   names(out)=c('rangeU','rangeV','sigmaU','sigmaV','tau1','tau2','A','Y1.m','Y2.m')
   return(out)

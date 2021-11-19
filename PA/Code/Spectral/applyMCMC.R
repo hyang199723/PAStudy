@@ -4,15 +4,20 @@ rm(list=ls())
 library(fields) 
 library(geoR)
 library(truncnorm)
-library(tidyverse)
-library(mvtnorm)
-setwd("/Users/hongjianyang/Research/PAStudy/PA/")
-source('Code/Spectral/ExtraFunctions.R')
-source('Code/Spectral/LMC_function.R')
+setwd("/Users/hongjianyang/Research/PAStudy/PA/Code/Spectral/Hongjian")
+source('ExtraFunctions.R')
+source('LMC_function.R')
 
-PA_data <- read.csv("Data/Formatted_PA_FRM/PA_2020_Hourly_Formatted.csv")
-FRM_data <- read.csv("Data/Formatted_PA_FRM/FRM_2020_Hourly_Formatted.csv")
+                ########################
+                #### Simulated data ####
+                ########################
+#source('simAllTS.R')
 
+                  ####################
+                  #### Real Data #####
+                  ####################
+PA_data <- read.csv("Formatted_PA_FRM/PA_2020_Hourly_Formatted.csv")
+FRM_data <- read.csv("Formatted_PA_FRM/FRM_2020_Hourly_Formatted.csv")
 # Convert timestamp
 PA_data$Timestamp <- as.POSIXct(PA_data$Timestamp, format = "%Y-%m-%d %H:%M:%OS")
 FRM_data$Timestamp <- as.POSIXct(FRM_data$Timestamp, format = "%Y-%m-%d %H:%M:%OS")
@@ -35,13 +40,15 @@ Y1 = as.matrix(data.frame(frmTS))
 colnames(Y1)=NULL
 Y2 = as.matrix(data.frame(paTS))
 colnames(Y2)=NULL
+                      
+
                         #####################
                         ### Fit the model ###
                         #####################
 
 #exit2=Compact.LMC_fit(Y1,Y2, s1,s2,iters=6000)
 #2042.504--> simudata 
-exit1=LMC_fit(Y1,Y2, s1,s2,iters=2000,thin=2)
+exit1=LMC_fit(Y1,Y2, s1,s2,iters=5000,thin=4)
 #2389.701
 
                     #################################
