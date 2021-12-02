@@ -18,7 +18,7 @@ PA_data$Timestamp <- as.POSIXct(PA_data$Timestamp, format = "%Y-%m-%d %H:%M:%OS"
 FRM_data$Timestamp <- as.POSIXct(FRM_data$Timestamp, format = "%Y-%m-%d %H:%M:%OS")
 # No PA 
 start = as.POSIXct('2020-03-01 05:00:00') 
-end = as.POSIXct('2020-03-02 23:00:00') # 67 timstamps/spectrums Oct 2 FRM stations OCt 1 - 7
+end = as.POSIXct('2020-03-03 23:00:00') # 67 timstamps/spectrums Oct 2 FRM stations OCt 1 - 7
 
 pa <- subset(PA_data, (Timestamp >= start) & (Timestamp <= end))
 frm <- subset(FRM_data, (Timestamp >= start) & (Timestamp <= end))
@@ -131,8 +131,8 @@ prang2=ggplot(res1 %>% filter(param=='rangeV')) +
   theme_bw()
 prang2
 
-ggsave('Figures/LMCConvergence/2Day/PostRange1.png', prang1)
-ggsave('Figures/LMCConvergence/2Day/PostRange2.png', prang2)
+ggsave('Figures/LMCConvergence/3Day/PostRange1.png', prang1)
+ggsave('Figures/LMCConvergence/3Day/PostRange2.png', prang2)
 
 ptau1=ggplot(res1 %>% filter(param=='tau1')) +
   geom_line(aes(x=iter,y=val,col=nchain),alpha=0.5) +
@@ -145,8 +145,8 @@ ptau2=ggplot(res1 %>% filter(param=='tau2')) +
   theme_bw() +
   ylim(c(0,1))
 ptau2
-ggsave('Figures/LMCConvergence/2Day/PostTau1.png',ptau1)
-ggsave('Figures/LMCConvergence/2Day/PostTau2.png',ptau2)
+ggsave('Figures/LMCConvergence/3Day/PostTau1.png',ptau1)
+ggsave('Figures/LMCConvergence/3Day/PostTau2.png',ptau2)
 
 # plots by freq
 freq1=1:round(dim(Y2)[2]/2)
@@ -164,8 +164,8 @@ pA_2=ggplot(res2%>% filter(param=='A',freq %in% freq2)) +
   labs(title = 'A (cont.)') +
   theme_bw()
 pA_2
-ggsave('Figures/LMCConvergence/2Day/PostA_frq1:15.png',pA_1)
-ggsave('Figures/LMCConvergence/2Day/PostA_frq16:30.png',pA_2)
+ggsave('Figures/LMCConvergence/3Day/PostA_frq1:15.png',pA_1)
+ggsave('Figures/LMCConvergence/3Day/PostA_frq16:30.png',pA_2)
 
 psigmaU_1=ggplot(res2 %>% filter(param=='sigmaU',freq %in% freq1)) +
   geom_line(aes(x=iter,y=val,col=nchain),alpha=0.5) +
@@ -180,8 +180,8 @@ psigmaU_2=ggplot(res2 %>% filter(param=='sigmaU',freq %in% freq2)) +
   theme_bw()
 psigmaU_2
 
-ggsave('Figures/LMCConvergence/2Day/PostSimaU_frq1:15.png',psigmaU_1)
-ggsave('Figures/LMCConvergence/2Day/PostSimaU_frq16:30.png',psigmaU_2)
+ggsave('Figures/LMCConvergence/3Day/PostSimaU_frq1:15.png',psigmaU_1)
+ggsave('Figures/LMCConvergence/3Day/PostSimaU_frq16:30.png',psigmaU_2)
 
 psigmaV_1=ggplot(res2 %>% filter(param=='sigmaV',freq %in% freq1)) +
   geom_line(aes(x=iter,y=val,col=nchain), alpha=0.5) +
@@ -195,8 +195,8 @@ psigmaV_2=ggplot(res2 %>% filter(param=='sigmaV',freq %in% freq2))+
   labs(title = 'sigma2 (cont.)') +
   theme_bw()
 psigmaV_2
-ggsave('Figures/LMCConvergence/2Day/PostSigmaV_frq1:15.png',psigmaV_1)
-ggsave('Figures/LMCConvergence/2Day/PostSigmaV_frq16:30.png',psigmaV_2)
+ggsave('Figures/LMCConvergence/3Day/PostSigmaV_frq1:15.png',psigmaV_1)
+ggsave('Figures/LMCConvergence/3Day/PostSigmaV_frq16:30.png',psigmaV_2)
 
 
 ########################################################
@@ -277,5 +277,5 @@ plot2=ggplot(RMSE2)+geom_boxplot(aes(y=RMSE,x=sites2))+theme_bw()
 plot2
 
 
-ggsave("Figures/ImputationCV/2Day/RMSEVC1.pdf",plot=plot1)
-ggsave("Figures/ImputationCV/2Day/RMSEVC2.pdf",plot=plot2)
+ggsave("Figures/ImputationCV/3Day/RMSEVC1.pdf",plot=plot1)
+ggsave("Figures/ImputationCV/3Day/RMSEVC2.pdf",plot=plot2)

@@ -39,11 +39,9 @@ colnames(Y2)=NULL
 # Parameters
 iters = 6000
 thin = 1
-
-source('Code/Spectral/LMC_function.R')
 # 1 Day speed
 time1 <- proc.time()[3]
-exit1 = compact.LMC_fit(Y1,Y2, s1,s2, iters=iters, thin=thin)
+exit1 = LMC_fit(Y1,Y2, s1,s2, iters=iters, thin=thin)
 time2 <- proc.time()[3]
 elaps1 = time2 - time1
 print(elaps1)

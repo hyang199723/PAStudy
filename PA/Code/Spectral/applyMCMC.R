@@ -4,9 +4,9 @@ rm(list=ls())
 library(fields) 
 library(geoR)
 library(truncnorm)
-setwd("/Users/hongjianyang/Research/PAStudy/PA/Code/Spectral/Hongjian")
-source('ExtraFunctions.R')
-source('LMC_function.R')
+setwd("/Users/hongjianyang/Research/PAStudy/PA/")
+source('Code/Spectral/ExtraFunctions.R')
+source('Code/Spectral/LMC_function.R')
 
                 ########################
                 #### Simulated data ####
@@ -16,8 +16,8 @@ source('LMC_function.R')
                   ####################
                   #### Real Data #####
                   ####################
-PA_data <- read.csv("Formatted_PA_FRM/PA_2020_Hourly_Formatted.csv")
-FRM_data <- read.csv("Formatted_PA_FRM/FRM_2020_Hourly_Formatted.csv")
+PA_data <- read.csv("Data/Formatted_PA_FRM/PA_2020_Hourly_Formatted.csv")
+FRM_data <- read.csv("Data/Formatted_PA_FRM/FRM_2020_Hourly_Formatted.csv")
 # Convert timestamp
 PA_data$Timestamp <- as.POSIXct(PA_data$Timestamp, format = "%Y-%m-%d %H:%M:%OS")
 FRM_data$Timestamp <- as.POSIXct(FRM_data$Timestamp, format = "%Y-%m-%d %H:%M:%OS")
@@ -48,7 +48,9 @@ colnames(Y2)=NULL
 
 #exit2=Compact.LMC_fit(Y1,Y2, s1,s2,iters=6000)
 #2042.504--> simudata 
+start = proc.time()[3]
 exit1=LMC_fit(Y1,Y2, s1,s2,iters=5000,thin=4)
+end = proc.time()[3]
 #2389.701
 
                     #################################
