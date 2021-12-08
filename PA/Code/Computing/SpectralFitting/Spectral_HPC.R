@@ -19,6 +19,7 @@ library(viridis)
 library(truncnorm)
 library(tidyr)
 library(mvtnorm)
+library(ggplot2)
 source('ExtraFunctions.R')
 source('LMC_function.R')
 OR = as.POSIXct('1970-01-01', tz = 'UTC')
@@ -58,6 +59,7 @@ lon = PA_data[1,1]
 lat = PA_data[1,2]
 df <- data.frame(Lon = lon, Lat = lat, Timestamp = time.missing, PM25 = NA)
 PA.complete = rbind(PA_data, df)
+
 # Complete FRM data
 time <- unique(FRM_data$Timestamp)
 int.seq <- as.numeric(time) / 3600
@@ -76,7 +78,7 @@ sum(is.na(PA.complete$Timestamp))
 sum(is.na(FRM.complete$Timestamp))
 
 start = as.POSIXct('2020-03-01 05:00:00') 
-end = as.POSIXct('2020-04-01 23:00:00') # 67 timstamps/spectrums Oct 2 FRM stations OCt 1 - 7
+end = as.POSIXct('2020-03-03 23:00:00') # 67 timstamps/spectrums Oct 2 FRM stations OCt 1 - 7
 interval = (as.numeric(end) - as.numeric(start)) / 3600
 print(interval + 1)
 
@@ -105,12 +107,26 @@ colnames(Y2)=NULL
 #exit2=Compact.LMC_fit(Y1,Y2, s1,s2,iters=6000)
 #2042.504--> simudata 
 start = proc.time()[3]
-exit1 = LMC_fit(Y1, Y2, s1, s2, iters = 3000, thin = 1)
-
+iters = 6000
+thin = 1
+exit1 = LMC_fit(Y1, Y2, s1, s2, iters = iters, thin = thin)
 end = proc.time()[3]
 #2389.701
 
+# Get Y1 and Y2
+burnin = 2000
+y1.raw <- exit1$Y1.m[,,burnin:iters,1]
+y2.raw <- exit1$Y2.m[,,burnin:iters,1]
 
+y1.complete = rowMeans(y1.raw, dims = 2)
+y2.complete = rowMeans(y2.raw, dims = 2)
+#write.csv(y1.complete, 'EPA_Imputed_2020.csv')
+#write.csv(y2.complete, 'PA_Imputed_2020.csv')
+
+y1.miss <- is.na(Y1)
+y2.miss <- is.na(Y2)
+## Make plots of missing values for a few stations
+# First, make plots for EPA stations
 
 #################################
 ### Analyse Exit of the model ###
