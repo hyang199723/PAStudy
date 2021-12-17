@@ -1,57 +1,69 @@
+# This script is for computationally intense tasks that runs on high performance machine
+# All data and source files need to be stored under the same directory
+# This includes the main LMC functions
+# This script has two functions, LMC_fit and compact.LMC_fit
+# Last update: 12/01/2021
+
 # Script to apply LMC functions to real data
-# Last update: 11/18/2021
+# Last update: 12/01/2021
 rm(list=ls())
+# Set working directory to current
+setwd('/Users/hongjianyang/Research/PAStudy/PA/')
+
 library(fields) 
-library(geoR)
+library(glue)
+library(viridis)
+#library(geoR)
 library(truncnorm)
-setwd("/Users/hongjianyang/Research/PAStudy/PA/")
+library(tidyr)
+library(mvtnorm)
+library(ggplot2)
 source('Code/Spectral/ExtraFunctions.R')
 source('Code/Spectral/LMC_function.R')
+frmTS <- read.csv('Data/Formatted_PA_FRM/missing_FRM.csv')
+paTS <- read.csv('Data/Formatted_PA_FRM/missing_PA.csv')
+frm.impute <- read.csv('Data/Formatted_PA_FRM/EPA_Imputed_2020.csv')
+pa.impute <- read.csv('Data/Formatted_PA_FRM/PA_Imputed_2020.csv')
 
-                ########################
-                #### Simulated data ####
-                ########################
-#source('simAllTS.R')
-
-                  ####################
-                  #### Real Data #####
-                  ####################
-PA_data <- read.csv("Data/Formatted_PA_FRM/PA_2020_Hourly_Formatted.csv")
-FRM_data <- read.csv("Data/Formatted_PA_FRM/FRM_2020_Hourly_Formatted.csv")
-# Convert timestamp
-PA_data$Timestamp <- as.POSIXct(PA_data$Timestamp, format = "%Y-%m-%d %H:%M:%OS")
-FRM_data$Timestamp <- as.POSIXct(FRM_data$Timestamp, format = "%Y-%m-%d %H:%M:%OS")
-# No PA 
-start = as.POSIXct('2020-03-01 05:00:00') 
-end = as.POSIXct('2020-03-01 23:00:00') # 67 timstamps/spectrums Oct 2 FRM stations OCt 1 - 7
-
-pa <- subset(PA_data, (Timestamp >= start) & (Timestamp <= end))
-frm <- subset(FRM_data, (Timestamp >= start) & (Timestamp <= end))
-# Get data to desired format
-paTS <- pivot_wider(pa, names_from = Timestamp, values_from = PM25)
-frmTS <- pivot_wider(frm, names_from = Timestamp, values_from = PM25)
-# Record locations of PA and FRM stations
 s1 <- as.matrix(frmTS[, 1:2])
 s2 <- as.matrix(paTS[, 1:2])
 # Get rid of the locations
-paTS <- paTS[, -c(1:2)]
 frmTS <- frmTS[, -c(1:2)]
+paTS <- paTS[, -c(1:2)]
 Y1 = as.matrix(data.frame(frmTS))
 colnames(Y1)=NULL
 Y2 = as.matrix(data.frame(paTS))
 colnames(Y2)=NULL
-                      
 
-                        #####################
-                        ### Fit the model ###
-                        #####################
+# Make one complete station 0
+rowNum = which(rowSums(is.na(Y2)) == 0)[1] # Row Number is 7
+raw <- Y2[rowNum, ]
+Y2[rowNum, ] = NA
+
+
+#####################
+### Fit the model ###
+#####################
 
 #exit2=Compact.LMC_fit(Y1,Y2, s1,s2,iters=6000)
 #2042.504--> simudata 
 start = proc.time()[3]
-exit1=LMC_fit(Y1,Y2, s1,s2,iters=5000,thin=4)
+iters = 6000
+thin = 1
+exit1 = LMC_fit(Y1, Y2, s1, s2, iters = iters, thin = thin)
 end = proc.time()[3]
 #2389.701
+
+# Get Y1 and Y2
+burnin = 2000
+y1.raw <- exit1$Y1.m[,,burnin:iters,1]
+y2.raw <- exit1$Y2.m[,,burnin:iters,1]
+
+y1.complete = rowMeans(y1.raw, dims = 2)
+y2.complete = rowMeans(y2.raw, dims = 2)
+
+imp <- y2.complete[rowNum, ]
+cor(imp, raw)
 
                     #################################
                     ### Analyse Exit of the model ###
