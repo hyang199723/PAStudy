@@ -1,5 +1,5 @@
 
-LMC_fit=function(Y1,Y2, s1,s2,
+LMC_fit=function(Y1,Y2, s1,s2,sp1=NULL,sp2=NULL,
                  mean_range=0, sd_range=1, mean_var=0, sd_var=1, mean_rho=0,
                  sd_rho=10, iters=3000, burn=1000, thin=1, update=10)
 {
@@ -11,7 +11,11 @@ m2       <- is.na(Y2)
 d        <- as.matrix(dist(rbind(s1,s2)))
 dv2 = as.matrix(dist(s2))
 const    <- nt/2
-  
+# constant for sigmaU-V priors 
+a1 <- (n2+n1)/2 + 1
+a2 <- n2/2 + 1  
+
+
 # Keep track of stuff
 
 # All parameters: "rangeu","rangev","sigmaU","sigmaV","taue1","taue2","A",'beta1','beta2'
@@ -38,6 +42,7 @@ keep.Y1.M= array(0,dim=c(n1,nt,iters,thin))
 keep.Y2.M= array(0,dim=c(n2,nt,iters,thin))
 
 
+
 ## get info for the ranges priors 
 
 priorR_mn1 <- log(max(d)) - 1.5
@@ -45,6 +50,25 @@ priorR_sd1 <- 1
 
 priorR_mn2 <- log(max(dv2)) - 1.5
 priorR_sd2 <- 1
+
+
+
+#predictions ?
+predictions<-!is.null(sp1) || !is.null(sp2)
+np1=1
+np2=1
+
+if(predictions){
+  np1 = nrow(sp1)
+  np2  = nrow(sp2)
+  dp = as.matrix(dist(rbind(sp1,sp2)))
+  all.d=as.matrix(dist(rbind(s1,s2,sp1,sp2))) 
+  dpv2 = as.matrix(dist(sp2))
+}
+keep.Y1.P= array(0,dim=c(np1,nt,iters,thin))
+keep.Y2.P= array(0,dim=c(np2,nt,iters,thin))
+
+
 
 
 
@@ -75,6 +99,23 @@ taue2  <- var(as.vector(Y2),na.rm=TRUE)
 sigmaU   <- rep(taue1,nt)
 sigmaV   <- rep(taue1,nt)
 A      <- rep(0,nt)
+
+
+
+if(predictions){
+  # set initial values
+  U1p = matrix(0,np1,nt)
+  U2p = matrix(0,np2,nt)
+  Z1p = matrix(0,np1,nt)
+  Z2p = matrix(0,np2,nt)
+  Ys1.pred = matrix(0,np1,nt)
+  Ys2.pred = matrix(0,np2,nt)
+}
+
+Y1.pred = matrix(beta1,np1,nt)
+Y2.pred = matrix(beta2,np2,nt)
+
+
 
 
 for(iter in 1:iters){
@@ -159,46 +200,57 @@ for(iter in 1:iters){
     
     S2Vinv= invV(dv2,rangeV)$Q
     
+    GYs1 = t(S1_G)%*%Ys1
+    GSU2 = t(S1_G)%*%S1invA1%*%U2
+    GVYs2 = t(V_G)%*%Ys2
+    GYs2 = t(S2_G)%*%Ys2
+    GSU1 = t(S2_G)%*%S2invA2%*%U1
+    GSV2 = t(S2_G)%*%V2
+    GVU2 <- t(V_G)%*%U2
+    
     # Gibbs sampling
     for (r in 1:nt) # for each spectral 
     {
       # # Sample U1
       newDiag = 1/taus1 + 1/sigmaU[r] * 1/S1_D
-      sigmaU1 <- S1_G %*% diag(1/newDiag) %*% t(S1_G)
-      # S1_G
-      meanU1 <- sigmaU1 %*% (1/taus1 * Ys1[,r] + 1/sigmaU[r] * S1invA1 %*% U2[,r])
-      U1[,r] = meanU1+S1_G%*%rnorm(n1, 0, 1/sqrt(newDiag))
+      #sigmaU1 <- S1_G %*% diag(1/newDiag) %*% t(S1_G)
+      #meanU1 <- sigmaU1 %*% (1/taus1 * Ys1[,r] + 1/sigmaU[r] * S1invA1 %*% U2[,r])
+      #U1[,r] = meanU1+S1_G%*%rnorm(n1, 0, 1/sqrt(newDiag))
+      meanU1 = GYs1[,r]/taus1 + GSU2[,r]/sigmaU[r]
+      U1[,r] = S1_G%*%(meanU1/newDiag + rnorm(n1, 0, 1/sqrt(newDiag)))
+      
       
       # # Sample U2
       newDiag = A[r]^2/taus2 + 1/sigmaU[r] * 1/S2_D
-      sigmaU2 <- S2_G %*% diag(1/newDiag) %*% t(S2_G)
-      
-      meanU2 <- sigmaU2 %*% (1/taus2 * A[r] * Ys2[,r] - 1/taus2 *A[r] * V2[,r] +
-                               1/sigmaU[r] * S2invA2 %*% U1[,r])
-      U2[,r] = meanU2+S2_G%*%rnorm(n2,0,1/sqrt(newDiag))
+      #sigmaU2 <- S2_G %*% diag(1/newDiag) %*% t(S2_G)
+      #meanU2 <- sigmaU2 %*% (1/taus2 * A[r] * Ys2[,r] - 1/taus2 *A[r] * V2[,r] +
+      #                         1/sigmaU[r] * S2invA2 %*% U1[,r])
+      #U2[,r] = meanU2+S2_G%*%rnorm(n2,0,1/sqrt(newDiag))
+      meanU2 <- (GYs2[,r]*A[r]*1/taus2-GSV2[,r]*A[r]/taus2+GSU1[,r]*1/sigmaU[r])
+      U2[,r] <- S2_G%*%(meanU2/newDiag+rnorm(n2, 0, 1/sqrt(newDiag)))
       
       # # Sample V2
       newDiag = 1/sigmaV[r] * 1/V_D + 1/taus2
-      sigmaV2 = V_G %*% diag(1/newDiag) %*% t(V_G)
-      
-      meanV2 <- sigmaV2 %*% (1/taus2 * Ys2[,r] - 1/taus2 * A[r] * U2[,r])
-      V2[,r] =meanV2+V_G%*%rnorm(n2,0,1/sqrt(newDiag))      
+      # sigmaV2 = V_G %*% diag(1/newDiag) %*% t(V_G)
+      # 
+      # meanV2 <- sigmaV2 %*% (1/taus2 * Ys2[,r] - 1/taus2 * A[r] * U2[,r])
+      # V2[,r] =meanV2+V_G%*%rnorm(n2,0,1/sqrt(newDiag))      
+      meanV2 <- (1/taus2 * GVYs2[,r] - 1/taus2 * A[r] * GVU2[,r])
+      V2[,r] <- V_G%*%(meanV2/newDiag+rnorm(n2, 0, 1/sqrt(newDiag)))
       
       # # Sample Al
-      sigmaAl <- solve(1/taus2 * t(U2[,r]) %*% U2[,r] + 1/5)
-      meanAl <- sigmaAl %*% (1/taus2 * t(Ys2[,r]) %*% U2[,r] - 1/taus2 * t(V2[,r]) %*% U2[,r] + 0.8/5)
+      sigmaAl <- solve(1/taus2 * sum(U2[,r]^2) + 1/5)
+      meanAl <- sigmaAl %*% (1/taus2 *sum(Ys2[,r]*U2[,r]) - 1/taus2 * sum(V2[,r]*U2[,r]) + 0.8/5)
       A[r] <- rtruncnorm(1, a=0, b=+Inf, mean=meanAl, sd=sqrt(sigmaAl))
       
       # # Sample sig1
       U_sim <- as.vector(append(U1[,r], U2[,r]))
-      a <- (n2+n1)/2 + 1
-      b <- (t(U_sim) %*% eigU$Q %*% U_sim) / 2 + 1
-      sigmaU[r] = 1/rgamma(1, a, b)
+      b1 <- (t(U_sim) %*% eigU$Q %*% U_sim) / 2 + 1
+      sigmaU[r] = 1/rgamma(1, a1, b1)
       
       # # # Sample sig2
-      a <- n2/2 + 1
-      b <- (t(V2[,r]) %*% eigV$Q %*% V2[,r]) / 2 + 1 
-      sigmaV[r] = 1/rgamma(1, a, b)
+      b2 <- (t(V2[,r]) %*% eigV$Q %*% V2[,r]) / 2 + 1 
+      sigmaV[r] = 1/rgamma(1, a2, b2)
       
     }
     
@@ -271,14 +323,63 @@ for(iter in 1:iters){
   
   keep.Y1.M[,,iter,ttt]=as.matrix(Y1)
   keep.Y2.M[,,iter,ttt]=as.matrix(Y2)
-  #print(iter)
+  
+  ##############################################:
+  #####           PREDICTIONS            #######:
+  ##############################################:
+  
+  if(iter>burn & predictions)# & iter %% 10 == 0
+  {
+    
+    
+    Mp=exp_corr(all.d,range=rangeU)
+    Mp00=Mp[1:(n1+n2),1:(n1+n2)]
+    Mp11=Mp[(n1+n2+1):(n1+n2+np1+np2),(n1+n2+1):(n1+n2+np1+np2)]
+    Mp10=Mp[(n1+n2+1):(n1+n2+np1+np2),1:(n1+n2)]
+    Mp01=t(Mp10)
+    
+    
+    E00=eigen(Mp00)
+    E00.G=E00$vectors
+    E00.D=E00$values
+    
+    Mp00.inv=E00.G%*%diag(1/E00.D)%*%t(E00.G)
+    
+    AA=Mp10%*%E00.G
+    B=Mp11-Mp10%*%Mp00.inv%*%Mp01
+  
+    Uls=rbind(U1,U2)  
+    
+      
+    
+    for (r in 1:nt)
+    {
+      Au=AA%*%Uls[,r] 
+      sigmaB=sigmaU[r]*B
+      Ul.pred=rmvnorm(1,mean=Au,sigma=sigmaB)
+      
+      U1p[,r]=Ul.pred[(1:np1)]
+      U2p[,r]=Ul.pred[(np1+1):(np1+np2)]
+    }
+    
+    
+    for(i in 1:np1){Z1p[i,] <- fft_real(U1p[i,],inverse=TRUE)}
+    Y1.pred <- beta1+Z1p+rnorm(n=nt,sd=sqrt(taue1)) #beta1?
+    keep.Y1.P[,,iter,ttt]=as.matrix(Y1.pred)
+    
+    
+    
+    }
+  
+
   } # End of thin
 }
 print(proc.time()[3] - start)
 
-
-out=list(keep.rangeU,keep.rangeV,keep.sigmaU,keep.sigmaV,keep.taue1,keep.taue2,keep.A,keep.Y1.M,keep.Y2.M)
-names(out)=c('rangeU','rangeV','sigmaU','sigmaV','tau1','tau2','A','Y1.m','Y2.m')
+keep.Y1.P=keep.Y1.P[,,(burn:iters),]
+out=list(keep.rangeU,keep.rangeV,keep.sigmaU,keep.sigmaV,keep.taue1,keep.taue2,keep.A,keep.Y1.M,keep.Y2.M, 
+         keep.Y1.P)
+names(out)=c('rangeU','rangeV','sigmaU','sigmaV','tau1','tau2','A','Y1.m','Y2.m','Y1p')
 return(out)
 }
 
@@ -604,7 +705,7 @@ Compact.LMC_fit=function(Y1,Y2, s1,s2,
     #print(iter)
   }
   print(proc.time()[3] - start)
-  
+  }
   
   out=list(keep.rangeU,keep.rangeV,keep.sigmaU,keep.sigmaV,keep.taue1,keep.taue2,keep.A,keep.Y1.M,keep.Y2.M)
   names(out)=c('rangeU','rangeV','sigmaU','sigmaV','tau1','tau2','A','Y1.m','Y2.m')
