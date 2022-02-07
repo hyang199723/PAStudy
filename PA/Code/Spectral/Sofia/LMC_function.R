@@ -51,26 +51,20 @@ priorR_sd1 <- 1
 priorR_mn2 <- log(max(dv2)) - 1.5
 priorR_sd2 <- 1
 
-
-
 #predictions ?
 predictions<-!is.null(sp1) || !is.null(sp2)
-np1=1
-np2=1
 
 if(predictions){
   np1 = nrow(sp1)
   np2  = nrow(sp2)
+  if (is.null(sp2))
+  {np2  = 0}
   dp = as.matrix(dist(rbind(sp1,sp2)))
   all.d=as.matrix(dist(rbind(s1,s2,sp1,sp2))) 
-  dpv2 = as.matrix(dist(sp2))
+  #dpv2 = as.matrix(dist(sp2))
 }
 keep.Y1.P= array(0,dim=c(np1,nt,iters,thin))
 keep.Y2.P= array(0,dim=c(np2,nt,iters,thin))
-
-
-
-
 
 # start MCMC
 start = proc.time()[3]
@@ -105,15 +99,15 @@ A      <- rep(0,nt)
 if(predictions){
   # set initial values
   U1p = matrix(0,np1,nt)
-  U2p = matrix(0,np2,nt)
+  #U2p = matrix(0,np2,nt)
   Z1p = matrix(0,np1,nt)
-  Z2p = matrix(0,np2,nt)
+  #Z2p = matrix(0,np2,nt)
   Ys1.pred = matrix(0,np1,nt)
-  Ys2.pred = matrix(0,np2,nt)
+  #Ys2.pred = matrix(0,np2,nt)
 }
 
 Y1.pred = matrix(beta1,np1,nt)
-Y2.pred = matrix(beta2,np2,nt)
+#Y2.pred = matrix(beta2,np2,nt)
 
 
 
@@ -331,7 +325,6 @@ for(iter in 1:iters){
   if(iter>burn & predictions)# & iter %% 10 == 0
   {
     
-    
     Mp=exp_corr(all.d,range=rangeU)
     Mp00=Mp[1:(n1+n2),1:(n1+n2)]
     Mp11=Mp[(n1+n2+1):(n1+n2+np1+np2),(n1+n2+1):(n1+n2+np1+np2)]
@@ -359,16 +352,14 @@ for(iter in 1:iters){
       Ul.pred=rmvnorm(1,mean=Au,sigma=sigmaB)
       
       U1p[,r]=Ul.pred[(1:np1)]
-      U2p[,r]=Ul.pred[(np1+1):(np1+np2)]
+      # if (!is.null(sp2))
+      # {U2p[,r]=Ul.pred[(np1+1):(np1+np2)]}
     }
     
     
     for(i in 1:np1){Z1p[i,] <- fft_real(U1p[i,],inverse=TRUE)}
     Y1.pred <- beta1+Z1p+rnorm(n=nt,sd=sqrt(taue1)) #beta1?
     keep.Y1.P[,,iter,ttt]=as.matrix(Y1.pred)
-    
-    
-    
     }
   
 
