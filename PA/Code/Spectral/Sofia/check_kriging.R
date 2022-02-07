@@ -55,14 +55,18 @@ for (i in 1:(dim(Y1)[1]/K))
   # Estimate coverage
   for(k in (K*(i-1)+1):(K*i))
   {
-    n.site=1
+    n.site=k
     samps=exit$Y1p[n.site,,]
     b=Y1[n.site,]
     
     a=apply(samps,1,quantile,c(0.05,0.95))
-    cc=1
-    for (j in 1:nt){cc=cc+as.numeric(between(b[j],a[1,j],a[2,j]))}
-    COV[n.site]=cc/nt
+    cc=numeric(nt)
+    for (j in 1:nt)
+    {
+      cc[j]=between(b[j],a[1,j],a[2,j])
+    }
+    
+    COV[n.site]=mean(cc,na.rm=TRUE)
   }
   #print(i)  
 }
