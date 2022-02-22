@@ -3,6 +3,7 @@ library(mvtnorm)
 library(MASS)
 library(truncnorm)
 library(invgamma)
+library(ggplot2)
 ########################################################################
 ##########      Functions
 ########################################################################
@@ -116,3 +117,10 @@ Al <- 0.8
 set.seed(131)
 Y1 <- U1 + as.vector(rnorm(n1, mean = 0, sd = sqrt(tau1)))
 Y2 <- Al * U2 + V2 + as.vector(rnorm(n2, mean = 0, sd = sqrt(tau2)))
+
+# Plot data
+Y=c(Y1,Y2)
+U=c(U1,U2)
+V=c(rep(NA,n1),V2)
+data = data.frame(type, Y, U, V, s)
+ggplot(data)+geom_point(aes(x=X1,y=X2,col=Y))+facet_grid(~type)+theme_bw()+ coord_fixed(ratio = 1)

@@ -1,6 +1,3 @@
-# Function scripts
-# It has correlation function calculation, FFT, and log-likelihood
-# Last update: 11/18/2021
 ##############################################################################
                       ##### Extra Functions ######
 ###############################################################################
@@ -17,8 +14,18 @@ exp_corr=function(d,range)
 # Get covariance matrix for U1, U2
 # d: distance matrix between coords
 # t: type, either 1 or 2
-# range: \rho_1, range for U 
-covU <- function(d,t,range) {
+# theta: parameters
+covU <- function(d,t,theta) {
+  range1 <- exp(theta[2])
+  sig1   <- exp(theta[6])
+  S <- diag(0, length(t))
+  S[t==1,t==1] <- sig1*exp(-d[t==1,t==1]/range1)
+  S[t==1,t==2] <- sig1*exp(-d[t==1,t==2]/range1)
+  S[t==2,t==1] <- sig1*exp(-d[t==2,t==1]/range1)
+  S[t==2,t==2] <- sig1*exp(-d[t==2,t==2]/range1) # Should it be range1 or range2?
+  return(S)
+}
+covUr <- function(d,t,range) {
   S <- diag(0, length(t))
   S[t==1,t==1] <- exp(-d[t==1,t==1]/range)
   S[t==1,t==2] <- exp(-d[t==1,t==2]/range)
@@ -128,8 +135,7 @@ invU <- function(d,n1,n2,rho){
   A12 <- S12%*%solve(S2)
   A21 <- t(S12)%*%solve(S1)
   out <- list(G=G,D=D,Q=Q,Q1=Q1,Q2=Q2,A12=A12,A21=A21,S11=S1,S12=S12,S22=S2,S21=S21)
-  return(out)
-}
+  return(out)}
 
 
 invV <- function(d,rho){
@@ -139,5 +145,4 @@ invV <- function(d,rho){
   D   <- E$values
   Q   <- G%*%diag(1/D)%*%t(G)
   out <- list(G=G,D=D,Q=Q)
-  return(out)
-}
+  return(out)}

@@ -51,20 +51,6 @@ priorR_sd1 <- 1
 priorR_mn2 <- log(max(dv2)) - 1.5
 priorR_sd2 <- 1
 
-#predictions ?
-predictions<-!is.null(sp1) || !is.null(sp2)
-
-if(predictions){
-  np1 = nrow(sp1)
-  np2  = nrow(sp2)
-  if (is.null(sp2))
-  {np2  = 0}
-  dp = as.matrix(dist(rbind(sp1,sp2)))
-  all.d=as.matrix(dist(rbind(s1,s2,sp1,sp2))) 
-  #dpv2 = as.matrix(dist(sp2))
-}
-keep.Y1.P= array(0,dim=c(np1,nt,iters,thin))
-keep.Y2.P= array(0,dim=c(np2,nt,iters,thin))
 
 # start MCMC
 start = proc.time()[3]

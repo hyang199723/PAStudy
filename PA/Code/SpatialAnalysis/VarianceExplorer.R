@@ -1,3 +1,4 @@
+rm(list=ls())
 library(tidyverse)
 library(dplyr)
 library(maps)
@@ -12,7 +13,7 @@ library(viridis)
 # Which means that EPA timestamp may not account for the daytime light saving
 # The latest EPA update is 08/31/2020
 
-setwd("/Users/hongjianyang/Research/PA/")
+setwd("/Users/hongjianyang/Research/PAStudy/PA/")
 source('Code/Tools/myFunc.R')
 
 ###########################################################################
@@ -24,30 +25,11 @@ source('Code/Tools/myFunc.R')
 ###########################################################################
 ###########################################################################
 ###########################################################################
-pa2020 <- read.csv('Data/NC_PA_FRM_PM/PA_2020_hourly_PM_NC.csv')
-epa2020 <- read.csv('Data/NC_PA_FRM_PM/FRM_2020_hourly_PM_NC.csv')
-# Subset data
-col <- c('Lon', 'Lat', 'Timestamp', 'PM25_corrected')
-pa <- pa2020 %>%
-  select(col) %>%
-  rename(PM25 = PM25_corrected) %>%
-  group_by(Lon, Lat, Timestamp) %>%
-  summarise(PM25 = mean(PM25))
-
-pa <- pa[order(pa$Lon, pa$Lat, pa$Timestamp), ]
-# Remove NAs
-pa <- pa[complete.cases(pa), ]
-
-# Process EPA data
-epa2020$Timestamp <- paste(epa2020$Date_GMT, epa2020$Hour_GMT)
-epa2020$Timestamp <- paste(epa2020$Timestamp, ':00', sep = '')
-col <- c('Lon', 'Lat', 'Timestamp', 'PM25')
-epa <- epa2020 %>% 
-  select(col)
-epa <- epa[order(epa$Lon, epa$Lat, epa$Timestamp), ]
+pa <- read.csv("Data/Formatted_PA_FRM/PA_2020_Hourly_Formatted.csv")
+epa <- read.csv("Data/Formatted_PA_FRM/FRM_2020_Hourly_Formatted.csv")
 
 # Get 07/01/2020 - 07/07/2020 data
-pa$Timestamp <- as.POSIXct(pa$Timestamp)
+pa$Timestamp <- as.POSIXct(pa$Timestamp, format = '%Y-%m-%d %H:%M:%OS')
 epa$Timestamp <- as.POSIXct(epa$Timestamp, format = '%Y-%m-%d %H:%M:%OS')
 startTime <- as.POSIXct('2020-07-01 00:00:00')
 endTime <- as.POSIXct('2020-07-07 23:59:59')
@@ -85,10 +67,7 @@ burn      <- 5000
 # Model: Y = \beta_{0} + \beta_{1}*Lon + \beta_{2}*Lat + \beta_{3}*Lon^2 + 
 # \beta_{4}*Lat^2 + \beta_{5}*LonLat + \beta_{6}I(epa)
 for (i in 0:(n_timestamp - 1)) {
-
   current <- as.POSIXct(3600 * i, origin = startTime)
-
-  
   subdf <- subset(df_combine, Timestamp == current)
   S <- data.matrix(subdf[, 1:2])
   maxd      <- max(dist(S))
@@ -122,11 +101,12 @@ for (i in 0:(n_timestamp - 1)) {
                     start=burn, thin=10, verbose=FALSE)
   
   pred <- pred$p.y.predictive.samples
-  
+  print('debug')
   Yhat  <- apply(pred,1,mean)
   Ysd   <- apply(pred,1,sd)
   
-  df <- data.frame(long=s0[,1],lat=s0[,2],Y=Ysd)
+  df.std <- data.frame(long=s0[,1],lat=s0[,2],Y=Ysd)
+  df.mean <- data.frame(long=s0[,1],lat=s0[,2],Y=Yhat)
   # Samples near RTP area
   # Longitude range: -78.89, -78.52; Latitude range: 35.71, 35.92
   rtp_sample <- subset(df, df$long <=-78.52 & df$long >= -78.89 & df$lat >= 35.71
@@ -135,7 +115,7 @@ for (i in 0:(n_timestamp - 1)) {
   one_var[i + 1] = rtp_std
   # Plot standard deviation
   spa <- sum(subdf$indicator == 0)
-  pred_var <- ggplot(df, aes(long, lat)) +
+  pred_var <- ggplot(df.std, aes(long, lat)) +
     geom_polygon(aes(x=long, y=lat)) +
     geom_raster(aes(fill = Y)) +
     geom_point(data = subdf, aes(Lon, Lat), colour = 'purple', size = 0.5) +
@@ -143,6 +123,15 @@ for (i in 0:(n_timestamp - 1)) {
     xlab(current)+ylab("")+labs(title="Posterior predictive standard deviation")+
     coord_fixed()
   plot(pred_var)
+  
+  pred_mean <- ggplot(df.mean, aes(long, lat)) +
+    geom_polygon(aes(x=long, y=lat)) +
+    geom_raster(aes(fill = Y)) +
+    geom_point(data = subdf, aes(Lon, Lat), colour = 'purple', size = 0.5) +
+    scale_fill_gradientn(colours = viridis(10))+
+    xlab(current)+ylab("")+labs(title="Posterior predictive mean")+
+    coord_fixed()
+  plot(pred_mean)
 }
 
 map <- map_data("county")

@@ -141,3 +141,77 @@ invV <- function(d,rho){
   out <- list(G=G,D=D,Q=Q)
   return(out)
 }
+
+
+# Code to convert original data to spectral ready format
+if (F) {
+  OR = as.POSIXct('1970-01-01', tz = 'UTC')
+  
+  ########################
+  #### Simulated data ####
+  ########################
+  #source('simAllTS.R')
+  
+  ####################
+  #### Real Data #####
+  ####################
+  PA_raw <- read.csv("Data/Formatted_PA_FRM/PA_2020_Hourly_Formatted.csv")
+  FRM_raw <- read.csv("Data/Formatted_PA_FRM/FRM_2020_Hourly_Formatted.csv")
+  PA_raw <- PA_raw[order(PA_raw$Timestamp), ]
+  FRM_raw <- FRM_raw[order(FRM_raw$Timestamp), ]
+  PA_data <- PA_raw
+  FRM_data <- FRM_raw
+  # Convert timestamp
+  # Note: We need to convert time to EST to avoid NA time issue
+  # For PA data, there is no missingness after conversion
+  # However, for FRM data, there are 20 missing values
+  PA_data$Timestamp <- as.POSIXct(PA_raw$Timestamp, tz = 'EST', format = "%Y-%m-%d %H:%M:%OS")
+  FRM_data$Timestamp <- as.POSIXct(FRM_raw$Timestamp, tz= 'EST', format = "%Y-%m-%d %H:%M:%OS")
+  
+  # Get rid of missingness in FRM
+  FRM_data <- FRM_data[!is.na(FRM_data$Timestamp), ]
+  # Complete Purple Air timestamps
+  time <- unique(PA_data$Timestamp)
+  int.seq <- as.numeric(time) / 3600
+  int.start = int.seq[1]
+  int.end = int.seq[length(int.seq)]
+  complete = int.start:int.end
+  pa.missing = complete[!(complete %in% int.seq)]
+  time.missing = as.POSIXct(pa.missing * 3600, origin = OR)
+  lon = PA_data[1,1]
+  lat = PA_data[1,2]
+  df <- data.frame(Lon = lon, Lat = lat, Timestamp = time.missing, PM25 = NA)
+  PA.complete = rbind(PA_data, df)
+  
+  # Complete FRM data
+  time <- unique(FRM_data$Timestamp)
+  int.seq <- as.numeric(time) / 3600
+  int.start = int.seq[1]
+  int.end = int.seq[length(int.seq)]
+  complete = int.start:int.end
+  frm.missing = complete[!(complete %in% int.seq)]
+  time.missing = as.POSIXct(frm.missing * 3600, origin = OR)
+  lon = FRM_data[1,1]
+  lat = FRM_data[1,2]
+  df <- data.frame(Lon = lon, Lat = lat, Timestamp = rep(time.missing, each = length(lon)), PM25 = NA)
+  FRM.complete = rbind(FRM_data, df)
+  
+  # Check NAs in PA and FRM data
+  sum(is.na(PA.complete$Timestamp))
+  sum(is.na(FRM.complete$Timestamp))
+  
+  start = as.POSIXct('2020-03-01 05:00:00') 
+  end = as.POSIXct('2020-03-03 23:00:00') # 67 timstamps/spectrums Oct 2 FRM stations OCt 1 - 7
+  interval = (as.numeric(end) - as.numeric(start)) / 3600
+  print(interval + 1)
+  
+  pa <- subset(PA.complete, (Timestamp >= start) & (Timestamp <= end))
+  frm <- subset(FRM.complete, (Timestamp >= start) & (Timestamp <= end))
+  # Get data to desired format
+  frmTS <- pivot_wider(frm, names_from = Timestamp, values_from = PM25)
+  paTS <- pivot_wider(pa, names_from = Timestamp, values_from = PM25)
+  
+  dim(frmTS)
+  dim(paTS)
+  # Record locations of PA and FRM stations
+}
