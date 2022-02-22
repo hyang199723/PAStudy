@@ -1,5 +1,5 @@
 
-LMC_fit=function(Y1,Y2, s1,s2,
+LMC_fit=function(Y1,Y2, s1,s2,sp1=NULL,sp2=NULL,
                  mean_range=0, sd_range=1, mean_var=0, sd_var=1, mean_rho=0,
                  sd_rho=10, iters=3000, burn=1000, thin=1, update=10)
 {
@@ -42,6 +42,7 @@ keep.Y1.M= array(0,dim=c(n1,nt,iters,thin))
 keep.Y2.M= array(0,dim=c(n2,nt,iters,thin))
 
 
+
 ## get info for the ranges priors 
 
 priorR_mn1 <- log(max(d)) - 1.5
@@ -49,6 +50,7 @@ priorR_sd1 <- 1
 
 priorR_mn2 <- log(max(dv2)) - 1.5
 priorR_sd2 <- 1
+
 
 # start MCMC
 start = proc.time()[3]
@@ -77,6 +79,23 @@ taue2  <- var(as.vector(Y2),na.rm=TRUE)
 sigmaU   <- rep(taue1,nt)
 sigmaV   <- rep(taue1,nt)
 A      <- rep(0,nt)
+
+
+
+if(predictions){
+  # set initial values
+  U1p = matrix(0,np1,nt)
+  #U2p = matrix(0,np2,nt)
+  Z1p = matrix(0,np1,nt)
+  #Z2p = matrix(0,np2,nt)
+  Ys1.pred = matrix(0,np1,nt)
+  #Ys2.pred = matrix(0,np2,nt)
+}
+
+Y1.pred = matrix(beta1,np1,nt)
+#Y2.pred = matrix(beta2,np2,nt)
+
+
 
 
 for(iter in 1:iters){
@@ -284,14 +303,60 @@ for(iter in 1:iters){
   
   keep.Y1.M[,,iter,ttt]=as.matrix(Y1)
   keep.Y2.M[,,iter,ttt]=as.matrix(Y2)
-  #print(iter)
+  
+  ##############################################:
+  #####           PREDICTIONS            #######:
+  ##############################################:
+  
+  if(iter>burn & predictions)# & iter %% 10 == 0
+  {
+    
+    Mp=exp_corr(all.d,range=rangeU)
+    Mp00=Mp[1:(n1+n2),1:(n1+n2)]
+    Mp11=Mp[(n1+n2+1):(n1+n2+np1+np2),(n1+n2+1):(n1+n2+np1+np2)]
+    Mp10=Mp[(n1+n2+1):(n1+n2+np1+np2),1:(n1+n2)]
+    Mp01=t(Mp10)
+    
+    
+    E00=eigen(Mp00)
+    E00.G=E00$vectors
+    E00.D=E00$values
+    
+    Mp00.inv=E00.G%*%diag(1/E00.D)%*%t(E00.G)
+    
+    AA=Mp10%*%E00.G
+    B=Mp11-Mp10%*%Mp00.inv%*%Mp01
+  
+    Uls=rbind(U1,U2)  
+    
+      
+    
+    for (r in 1:nt)
+    {
+      Au=AA%*%Uls[,r] 
+      sigmaB=sigmaU[r]*B
+      Ul.pred=rmvnorm(1,mean=Au,sigma=sigmaB)
+      
+      U1p[,r]=Ul.pred[(1:np1)]
+      # if (!is.null(sp2))
+      # {U2p[,r]=Ul.pred[(np1+1):(np1+np2)]}
+    }
+    
+    
+    for(i in 1:np1){Z1p[i,] <- fft_real(U1p[i,],inverse=TRUE)}
+    Y1.pred <- beta1+Z1p+rnorm(n=nt,sd=sqrt(taue1)) #beta1?
+    keep.Y1.P[,,iter,ttt]=as.matrix(Y1.pred)
+    }
+  
+
   } # End of thin
 }
 print(proc.time()[3] - start)
 
-
-out=list(keep.rangeU,keep.rangeV,keep.sigmaU,keep.sigmaV,keep.taue1,keep.taue2,keep.A,keep.Y1.M,keep.Y2.M)
-names(out)=c('rangeU','rangeV','sigmaU','sigmaV','tau1','tau2','A','Y1.m','Y2.m')
+keep.Y1.P=keep.Y1.P[,,(burn:iters),]
+out=list(keep.rangeU,keep.rangeV,keep.sigmaU,keep.sigmaV,keep.taue1,keep.taue2,keep.A,keep.Y1.M,keep.Y2.M, 
+         keep.Y1.P)
+names(out)=c('rangeU','rangeV','sigmaU','sigmaV','tau1','tau2','A','Y1.m','Y2.m','Y1p')
 return(out)
 }
 
