@@ -98,6 +98,8 @@ Y1.pred = matrix(beta1,np1,nt)
 
 
 
+
+
 for(iter in 1:iters){
 
    

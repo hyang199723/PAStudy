@@ -34,7 +34,7 @@ comp <- apply(dfna, 2, sum)
 newpa <- pa[, comp <= 8000]
 
 # Complete date time
-origin <- as.POSIXct('2020-01-01 00:00:00')
+origin <- as.POSIXct('2020-01-01 05:00:00')
 gap <- 3600 # 1 hr = 3600 sec
 time2020 <- c()
 for (i in 0:8778) {
@@ -78,14 +78,14 @@ pa <- temp %>% separate(Lon, into = c(NA, 'Lon'), sep = 2)
 pa$Timestamp <- as.POSIXct(pa$Timestamp)
 pa$Lon <- -as.numeric(pa$Lon)
 pa$Lat <- as.numeric(pa$Lat)
-pa$PM25 <- as.numeric(pa$PM25)
+pa$PM25 <- as.numeric(levels(pa$PM25))[pa$PM25]
 
 
 
 ## DO the same thing for epa data
 # Complete date time
 newepa2 <- left_join(timeframe, epa, by = 'Timestamp')
-newepa <- data.frame(newpa2[order(newpa2$Timestamp), ])
+newepa <- data.frame(newepa2[order(newpa2$Timestamp), ])
 
 colsum <- ncol(newepa)
 row1 <- newepa[1, 2:colsum]
@@ -105,8 +105,8 @@ epa <- temp %>% separate(Lon, into = c(NA, 'Lon'), sep = 2)
 epa$Timestamp <- as.POSIXct(epa$Timestamp)
 epa$Lon <- -as.numeric(epa$Lon)
 epa$Lat <- as.numeric(epa$Lat)
-epa$PM25 <- as.numeric(epa$PM25)
+epa$PM25 <- as.numeric(levels(epa$PM25))[epa$PM25]
 
 # Write
-#write.csv(pa, 'PA_2020_Imputed.csv', row.names = FALSE)
-#write.csv(epa, 'FRM_2020_Imputed.csv', row.names = FALSE)
+write.csv(pa, 'PA_2020_Imputed.csv', row.names = FALSE)
+write.csv(epa, 'FRM_2020_Imputed.csv', row.names = FALSE)
