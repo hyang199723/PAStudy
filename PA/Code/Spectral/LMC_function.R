@@ -1,5 +1,6 @@
 # This includes the main LMC functions
 # This script has two functions, LMC_fit and compact.LMC_fit
+# This is the oldest version
 # Last update: 11/19/2021
 LMC_fit=function(Y1,Y2, s1,s2,
                  mean_range=0, sd_range=1, mean_var=0, sd_var=1, mean_rho=0,
