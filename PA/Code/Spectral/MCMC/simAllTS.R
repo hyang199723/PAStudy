@@ -38,13 +38,6 @@ lrangeu=log(rangeu)
 rangev=0.5
 lrangev=log(rangev)
 
-# Different range per freq
-# set.seed(213)
-# rangeu=runif(nt,min=0.5,max=1.5)
-# lrangeu=log(rangeu)
-# set.seed(313)
-#rangev=runif(nt,min=0.5,max=1.5)
-#lrangev=log(rangev)
 
 ## mean
 beta.1=0
