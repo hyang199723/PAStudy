@@ -1,5 +1,5 @@
 # try prediction block
-
+rm(list = ls())
 library(fields) 
 library(geoR)
 library(truncnorm)
