@@ -1,7 +1,5 @@
-rm(list = ls())
 # try prediction block
-# Last update: 02/22/2022
-setwd("/Users/hongjianyang/Research/PAStudy/PA/Code/Spectral/Hongjian")
+rm(list = ls())
 library(fields) 
 library(geoR)
 library(truncnorm)
@@ -21,9 +19,10 @@ burn=1000
 
 
 #CV 
-K=5
+K=10 
 
-for (i in 1:(dim(Y1)[1]/K)) {
+for (i in 1:(dim(Y1)[1]/K))
+{
   #set train and set sets of EPA data
   which.test1=seq(1:dim(Y1)[1])[(K*(i-1)+1):(K*i)]
   train.sites1=seq(1:dim(Y1)[1])[-which.test1]
@@ -69,7 +68,7 @@ for (i in 1:(dim(Y1)[1]/K)) {
     
     COV[n.site]=mean(cc,na.rm=TRUE)
   }
-  print(i)  
+  #print(i)  
 }
 
 # get data frame to plot
