@@ -60,7 +60,7 @@ ggplot(df, aes(X1, X2)) +
   geom_raster(data = Y1.pred, aes(long, lat), aes(fill = X1)) +
   scale_fill_gradientn(colours = viridis(10))
   
-df1 = data.frame(cbind(sp1, Y1.pred[, 1]))
+df1 = data.frame(cbind(sp1, Y1.pred[, 2]))
 ggplot(df1, aes(s01, s02)) +
   geom_point(aes(colour = V3), size = 0.1) +
   scale_colour_gradient(low="#22FF00", high="#FF0000")
