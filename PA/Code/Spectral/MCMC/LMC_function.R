@@ -323,10 +323,7 @@ for(iter in 1:iters){
   if(iter>burn & predictions)# & iter %% 10 == 0
   {
     
-    #Mp=exp_corr(all.d, range=rangeU) # Range may not be correct.
-    Mp=exp_corr(all.d, range=mean(keep.rangeU)) # Range is not correct.
-    # First, we need to verify that the range converges correctly
-    # Second, we need to use mean range rather than the last value
+    Mp=exp_corr(all.d, range=rangeU)
     Mp00=Mp[1:(n1+n2),1:(n1+n2)]
     Mp11=Mp[(n1+n2+1):(n1+n2+np1+np2),(n1+n2+1):(n1+n2+np1+np2)]
     Mp10=Mp[(n1+n2+1):(n1+n2+np1+np2),1:(n1+n2)]
