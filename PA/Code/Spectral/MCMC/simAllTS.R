@@ -1,6 +1,5 @@
 source('ExtraFunctions.R')
 #### simulation of the time series process
-
 library(tidyverse)
 library(spBayes)
 library(ggplot2)
@@ -18,9 +17,9 @@ exp_corr=function(d,range)
 
 ###### set some parameters ########
 
-n=c(300,350) # number of locations
+n=c(130,70) # number of locations
 
-nt=10 # total time steps
+nt=5 # total time steps
 
 tau1=1^2 # error variance1
 tau2=(1.5)^2  # error variance2

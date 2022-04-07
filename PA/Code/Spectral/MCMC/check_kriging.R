@@ -1,11 +1,12 @@
 # try prediction block
-
+rm(list = ls())
 library(fields) 
 library(geoR)
 library(truncnorm)
 library(tidyverse)
 library(mvtnorm)
 library(gridExtra)
+setwd("/Users/hongjianyang/Research/PAStudy/PA/Code/Spectral/MCMC/")
 source('ExtraFunctions.R')
 source('LMC_function.R')
 

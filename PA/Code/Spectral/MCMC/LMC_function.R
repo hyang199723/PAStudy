@@ -1,4 +1,3 @@
-
 LMC_fit=function(Y1,Y2, s1,s2,sp1=NULL,sp2=NULL,
                  mean_range=0, sd_range=1, mean_var=0, sd_var=1, mean_rho=0,
                  sd_rho=10, iters=3000, burn=1000, thin=1, update=10)
@@ -51,8 +50,9 @@ priorR_sd1 <- 1
 priorR_mn2 <- log(max(dv2)) - 1.5
 priorR_sd2 <- 1
 
-predictions<-!is.null(sp1) || !is.null(sp2)
-
+predictions <- is.null(sp1) || is.null(sp2)
+# Temporary placeholder for predicions
+predictions = F
 if(predictions){
   np1 = nrow(sp1)
   np2  = nrow(sp2)
@@ -63,9 +63,9 @@ if(predictions){
   all.d=as.matrix(dist(rbind(s1,s2,sp1,sp2))) 
   
   #dpv2 = as.matrix(dist(sp2))
+  keep.Y1.P= array(0,dim=c(np1,nt,iters,thin))
+  keep.Y2.P= array(0,dim=c(np2,nt,iters,thin))
 }
-keep.Y1.P= array(0,dim=c(np1,nt,iters,thin))
-keep.Y2.P= array(0,dim=c(np2,nt,iters,thin))
 
 # start MCMC
 start = proc.time()[3]
@@ -104,10 +104,11 @@ if(predictions){
   #Z2p = matrix(0,np2,nt)
   Ys1.pred = matrix(0,np1,nt)
   #Ys2.pred = matrix(0,np2,nt)
+  
+  Y1.pred = matrix(beta1,np1,nt)
+  #Y2.pred = matrix(beta2,np2,nt)
 }
 
-Y1.pred = matrix(beta1,np1,nt)
-#Y2.pred = matrix(beta2,np2,nt)
 
 
 for(iter in 1:iters){
@@ -336,8 +337,10 @@ for(iter in 1:iters){
     
     Mp00.inv=E00.G%*%diag(1/E00.D)%*%t(E00.G)
     
-    AA=Mp10%*%E00.G
-    B=Mp11-Mp10%*%Mp00.inv%*%Mp01
+    AA=Mp10%*%Mp00.inv
+    a=Mp10%*%Mp00.inv%*%t(Mp10)
+    a=round(a,digits=7) # to avoid numercial underflow
+    B=Mp11-a
   
     Uls=rbind(U1,U2)  
     
@@ -365,10 +368,9 @@ for(iter in 1:iters){
 }
 print(proc.time()[3] - start)
 
-keep.Y1.P=keep.Y1.P[,,(burn:iters),]
-out=list(keep.rangeU,keep.rangeV,keep.sigmaU,keep.sigmaV,keep.taue1,keep.taue2,keep.A,keep.Y1.M,keep.Y2.M, 
-         keep.Y1.P)
-names(out)=c('rangeU','rangeV','sigmaU','sigmaV','tau1','tau2','A','Y1.m','Y2.m','Y1p')
+#keep.Y1.P=keep.Y1.P[,,(burn:iters),]
+out=list(keep.rangeU,keep.rangeV,keep.sigmaU,keep.sigmaV,keep.taue1,keep.taue2,keep.A,keep.Y1.M,keep.Y2.M)
+names(out)=c('rangeU','rangeV','sigmaU','sigmaV','tau1','tau2','A','Y1.m','Y2.m')
 return(out)
 }
 

@@ -3,8 +3,8 @@ library(mvtnorm)
 library(MASS)
 library(truncnorm)
 library(invgamma)
-setwd("/Users/hongjianyang/Research/PAStudy/PA/Code/Spectral/Hongjian")
-source('SimData.R')
+setwd("/Users/hongjianyang/Research/PAStudy/PA/Code/Spectral/")
+source('SimRecovery/SimData.R')
 
 ################################################
 ########## Functions
@@ -31,12 +31,12 @@ log_post <- function(Y, n, range, distance) {
 ################################################
 ########## MH within Gibbs
 ################################################
-iters = 3000
+iters = 10000
 # Generate Initial Values for U1, U2, V2, Al, and sigmas
 U1_init <- as.vector(rnorm(n1))
 U2_init <- as.vector(rnorm(n2))
 V2_init <- as.vector(rnorm(n2))
-Al_init <- 0
+Al_init <- 0.2
 sig1_init <- 2
 sig2_init <- 2
 tau1_init = 0.1
@@ -224,7 +224,10 @@ plot(tau2_sim_all,type="l",
      xlab="MCMC iteration",ylab="Sample",
      main='tau2')
 abline(tau2,0,col=2,lwd=2)
-plot(x = 1:iters, y = keep.range1, 'l')
+
+
+plot(x = 1:iters, y = keep.range1, 'l', main = 'range1')
 abline(h = 0.1, col = 'red')
-plot(x = 1:iters, y = keep.range2, 'l')
+
+plot(x = 1:iters, y = keep.range2, 'l', main = 'range2')
 abline(h = 0.3, col = 'red')
