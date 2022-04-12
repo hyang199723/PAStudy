@@ -7,6 +7,7 @@ library(mgcv)
 library(MASS)
 library(mvtnorm)
 library(truncnorm)
+library(viridis)
 
 # correlation function
 exp_corr=function(d,range)
@@ -17,14 +18,14 @@ exp_corr=function(d,range)
 
 ###### set some parameters ########
 
-n=c(130,70) # number of locations
+n=c(300,200) # number of locations
 
 nt=5 # total time steps
 
 tau1=1^2 # error variance1
 tau2=(1.5)^2  # error variance2
 set.seed(99)
-al=runif(nt,min=.5,max=1)
+al=runif(nt,min=5,max=10)
 
 # correlation parameters
 set.seed(88)
@@ -32,9 +33,9 @@ sigmau=seq(from=100,to=1,length=10)+rnorm(nt,sd=2)
 set.seed(564)
 sigmav=seq(from=10,to=.1,length=10)+rtruncnorm(nt,a=0,sd=.2)
 # same range for all freq
-rangeu=0.9
+rangeu=0.15
 lrangeu=log(rangeu)
-rangev=0.5
+rangev=0.2
 lrangev=log(rangev)
 
 
@@ -99,15 +100,19 @@ Y2.real=Y2
 
 ## missing values 
 
-miss1=list()
-miss2=list()
-set.seed(8923)
-for (t in 1:nt)
-{
-  miss1[[t]]=sample(1:n[1],ceiling(n[1]/6),replace=FALSE)
-  miss2[[t]]=sample(1:n[2],ceiling(n[2]/6),replace=FALSE)
-  Y1[miss1[[t]],t]=NA
-  Y2[miss2[[t]],t]=NA
+# Exclude missing values for testing purpose 
+if (F) {
+  miss1=list()
+  miss2=list()
+  set.seed(8923)
+  for (t in 1:nt)
+  {
+    miss1[[t]]=sample(1:n[1],ceiling(n[1]/6),replace=FALSE)
+    miss2[[t]]=sample(1:n[2],ceiling(n[2]/6),replace=FALSE)
+    Y1[miss1[[t]],t]=NA
+    Y2[miss2[[t]],t]=NA
+  }
+  
 }
 
 
@@ -117,6 +122,7 @@ for (t in 1:nt)
 time=rep(seq(1,nt),each=sum(n))
 type=rep(c(rep('1',n[1]),rep('2',n[2])),nt)
 Y=c(as.vector(Y1),as.vector(Y2))
+Ys=c(as.vector(Z1sp),as.vector(Z2sp))
 U=c(as.vector(u1),as.vector(u2))
 V=c(rep(NA,n[1]*nt),as.vector(v2))
 s1=rep(c(coords1[,1],coords2[,1]),nt)
@@ -124,21 +130,55 @@ s2=rep(c(coords1[,2],coords2[,2]),nt)
 site=rep(seq(1:sum(n)),nt)
 
 
-data=data.frame(time,type,Y,U,V,s1,s2,site)
+data=data.frame(time,type,Y,U,V,s1,s2,site, Ys)
 s1=coords1
 s2=coords2
 type=c(rep('1',n[1]),rep('2',n[2]))
 
 # plot some data
 #spatial
-ggplot(data %>% filter(time==1))+geom_point(aes(x=s1,y=s2,col=Y))+facet_grid(~type)+theme_bw()+ coord_fixed(ratio = 1)
-ggplot(data %>% filter(time==2))+geom_point(aes(x=s1,y=s2,col=Y))+facet_grid(~type)+theme_bw()+ coord_fixed(ratio = 1)
-ggplot(data %>% filter(time==3))+geom_point(aes(x=s1,y=s2,col=Y))+facet_grid(~type)+theme_bw()+ coord_fixed(ratio = 1)
-ggplot(data %>% filter(time==4))+geom_point(aes(x=s1,y=s2,col=Y))+facet_grid(~type)+theme_bw()+ coord_fixed(ratio = 1)
+ggplot(data %>% filter(time==1))+
+  geom_point(aes(x=s1,y=s2,col=Y))+
+  facet_grid(~type)+theme_bw()+coord_fixed(ratio = 1)+
+  ggtitle('Y values, time 1')+scale_colour_gradient(low="#22FF00", high="#FF0000")
+
+ggplot(data %>% filter(time==2))+
+  geom_point(aes(x=s1,y=s2,col=Y))+
+  facet_grid(~type)+theme_bw()+coord_fixed(ratio = 1)+
+  ggtitle('Y values, time 2')+scale_colour_gradient(low="#22FF00", high="#FF0000")
+
+ggplot(data %>% filter(time==3))+
+  geom_point(aes(x=s1,y=s2,col=Y))+
+  facet_grid(~type)+theme_bw()+coord_fixed(ratio = 1)+ 
+  ggtitle('Y values, time 3')+scale_colour_gradient(low="#22FF00", high="#FF0000")
+
+ggplot(data %>% filter(time==4))+
+  geom_point(aes(x=s1,y=s2,col=Y))+
+  facet_grid(~type)+theme_bw()+coord_fixed(ratio = 1)+ 
+  ggtitle('Y values, time 4')+scale_colour_gradient(low="#22FF00", high="#FF0000")
 
 #temporal
 ggplot(data %>% filter(site %in%seq(1:20)))+geom_line(aes(x=time,y=Y))+facet_wrap(~site)+theme_bw()
 
+# Plot U data
+ggplot(data %>% filter(time==1))+
+  geom_point(aes(x=s1,y=s2,col=U))+
+  facet_grid(~type)+theme_bw()+coord_fixed(ratio = 1) + ggtitle('U values, time 1') +
+  scale_colour_gradient(low="#22FF00", high="#FF0000")
 
+ggplot(data %>% filter(time==2))+
+  geom_point(aes(x=s1,y=s2,col=U))+
+  facet_grid(~type)+theme_bw()+coord_fixed(ratio = 1) + ggtitle('U values, time 2') +
+  scale_colour_gradient(low="#22FF00", high="#FF0000")
 
+# Plot Ys (response value in spectral domain)
+ggplot(data %>% filter(time==1))+
+  geom_point(aes(x=s1,y=s2,col=Ys))+
+  facet_grid(~type)+theme_bw()+coord_fixed(ratio = 1) + ggtitle('Spectral Y values, time 1') +
+  scale_colour_gradient(low="#22FF00", high="#FF0000")
 
+# Plot Ys (response value in spectral domain)
+ggplot(data %>% filter(time==2))+
+  geom_point(aes(x=s1,y=s2,col=Ys))+
+  facet_grid(~type)+theme_bw()+coord_fixed(ratio = 1) + ggtitle('Spectral Y values, time 2') +
+  scale_colour_gradient(low="#22FF00", high="#FF0000")

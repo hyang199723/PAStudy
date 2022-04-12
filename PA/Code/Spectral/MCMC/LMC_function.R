@@ -51,7 +51,11 @@ priorR_mn2 <- log(max(dv2)) - 1.5
 priorR_sd2 <- 1
 
 predictions <- is.null(sp1) || is.null(sp2)
+########################################
+########################################
 # Temporary placeholder for predicions
+########################################
+########################################
 predictions = F
 if(predictions){
   np1 = nrow(sp1)
@@ -343,9 +347,6 @@ for(iter in 1:iters){
     B=Mp11-a
   
     Uls=rbind(U1,U2)  
-    
-      
-    
     for (r in 1:nt)
     {
       Au=AA%*%Uls[,r] 

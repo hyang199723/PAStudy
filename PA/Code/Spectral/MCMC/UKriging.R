@@ -18,7 +18,7 @@ source('simAllTS.R') # load your data here
 #CV 
 K=5
 npreds=50
-Y1.pred= array(0,dim=c(nrow(Y1),ncol(Y1),npreds))
+U1.pred= array(0,dim=c(nrow(Y1),ncol(Y1),npreds))
 RMSE=matrix(0,npreds,dim(Y1)[1])
 COV=numeric(dim(Y1)[1])
 U <- rbind(u1, u2)
@@ -35,9 +35,8 @@ for (i in 1:(dim(Y1)[1]/K))
   sp1=s1[which.test1,]
   st1 = s1[train.sites1, ]
   st2 = s2
-  
   # train set of PA (all)
-  Y22 = Y2
+  Y22 = u2
   s22=s2
   sp2=NULL # no test set
   
@@ -46,6 +45,7 @@ for (i in 1:(dim(Y1)[1]/K))
   nt       <- ncol(Y11)
   m1       <- is.na(Y11)
   m2       <- is.na(Y22)
+  d        <- as.matrix(dist(rbind(s11,s22)))
   dv2 = as.matrix(dist(s22))
   
   np1 = nrow(sp1)
@@ -78,27 +78,27 @@ for (i in 1:(dim(Y1)[1]/K))
   ### sample U npreds times 
   for (j in 1:npreds)
   {
-  Uls = matrix(0,n1+n2,nt)
-  
-  # Ul is knwon
-  if (F) {
+    Uls = matrix(0,n1+n2,nt)
+
+    # Ul is knwon
+    if (F) {
+      for (r in 1:nt)
+      {
+        Uls[,r]=t(chol(Mp00))%*%rnorm(n1+n2,0,sqrt(sigmau[r]))
+      }
+    }
+    
+    
+    U1p = matrix(0,np1,nt)
     for (r in 1:nt)
     {
-      Uls[,r]=t(chol(Mp00))%*%rnorm(n1+n2,0,sqrt(sigmau[r]))
+      Au=AA%*%as.matrix(U[train.sites2,r])
+      sigmaB=sigmau[r]*B
+      Ul.pred=rmvnorm(1,mean=Au,sigma=sigmaB)
+      U1p[,r]=Ul.pred[(1:np1)]
     }
-  }
-  
-  U1p = matrix(0,np1,nt)
-  for (r in 1:nt)
-  {
-    Au=AA%*%as.matrix(U[train.sites2,r])
-    sigmaB=sigmau[r]*B
-    Ul.pred=rmvnorm(1,mean=Au,sigma=sigmaB)
-    U1p[,r]=Ul.pred[(1:np1)]
-  }
-  
-  for(nn in 1:np1){Z1p[nn,] <- fft_real(U1p[nn,],inverse=TRUE)}
-  Y1.pred[which.test1,,j] <- beta.1+Z1p+rnorm(n=nt,sd=sqrt(tau1)) 
+    
+    U1.pred[which.test1,,j] <- beta.1+U1p
   }
   
   
@@ -106,8 +106,8 @@ for (i in 1:(dim(Y1)[1]/K))
   
   for (k in 1:npreds)
   {
-    a1=Y1.pred[which.test1,,k]
-    b1=Y1[which.test1,]
+    a1=U1.pred[which.test1,,k]
+    b1=u1[which.test1,]
     #RMSE
     RMSE[k,(K*(i-1)+1):(K*i)]=sqrt(apply((a1-b1)^2,1,sum,na.rm=TRUE)/dim(a1)[2])
   }
@@ -116,8 +116,8 @@ for (i in 1:(dim(Y1)[1]/K))
   # Estimate coverage
   for(k in which.test1)
   {
-    samps=Y1.pred[m,,]
-    b=Y1[k,]
+    samps=U1.pred[m,,]
+    b=u1[k,]
     
     a=apply(samps,1,quantile,c(0.05,0.95))
     cc=numeric(nt)
@@ -153,111 +153,3 @@ ggplot(RMSES %>% filter(station%in%seq(1,40)))+geom_boxplot(aes(y=rmse,x=station
 p1=ggplot(RMSES)+geom_histogram(aes(x=rmse))+theme_bw()+ labs(x = "",y='')
 p2=ggplot(RMSES)+geom_boxplot(aes(y=rmse))+theme_bw()
 figureRMSE <- grid.arrange(p1, p2,ncol=2,top=textGrob("RMSE"))
-#ggsave('RMSE.pdf',figureRMSE)
-
-# COV pro
-ggplot(COV.pr)+geom_boxplot(aes(y=cov))+theme_bw()
-p3=ggplot(COV.pr)+geom_histogram(aes(x=cov))+theme_bw()
-#ggsave('covP.pdf',p3)
-
-
-# simple Y vs Y pred plots
-#pdf("real-predicted.pdf") 
-
-Station=2
-n.pred=10
-par(mfrow=c(3,3),mar=c(1,1,1,1))
-for(i in 1:9)
-{
-  Station=i
-  
-  plot(Y1[,1],Y1.pred[,1,n.pred],xlab=c('real'),ylab=c('predicted'),asp=1)
-  abline(a=0,b=1)
-  
-}
-#dev.off() 
-
-
-
-# fiting the model
-
-iters=3000
-burn=1000
-
-
-for (i in 1:(dim(Y1)[1]/K))
-{
-  #set train and set sets of EPA data
-  which.test1=seq(1:dim(Y1)[1])[(K*(i-1)+1):(K*i)]
-  train.sites1=seq(1:dim(Y1)[1])[-which.test1]
-  
-  Y11 = Y1[train.sites1,]
-  s11=s1[train.sites1,]
-  sp1=s1[which.test1,]
-  
-  # train set of PA (all)
-  Y22 = Y2
-  s22=s2
-  sp2=NULL # no test set
-  
-  # fit model and predict
-  exit=LMC_fit(Y1=Y11,Y2=Y22, s1=s11,s2=s22,sp1=sp1,sp2=sp2,
-               mean_range=0, sd_range=1, mean_var=0, sd_var=1, mean_rho=0,
-               sd_rho=10, iters=iters, burn=burn, thin=1, update=10)
-  
-  # Check prediction 
-  
-  for (k in 2:(iters-burn))
-  {
-    a1=exit$Y1p[,,k]  
-    b1=Y1[which.test1,]
-    #RMSE
-    RMSE[k,(K*(i-1)+1):(K*i)]=sqrt(apply((a1-b1)^2,1,sum,na.rm=TRUE)/dim(a1)[2])
-  }
-  
-  m=1
-  # Estimate coverage
-  for(k in which.test1)
-  {
-    samps=exit$Y1p[m,,]
-    b=Y1[k,]
-    
-    a=apply(samps,1,quantile,c(0.05,0.95))
-    cc=numeric(nt)
-    for (j in 1:nt)
-    {
-      cc[j]=between(b[j],a[1,j],a[2,j])
-    }
-    
-    COV[k]=mean(cc,na.rm=TRUE)
-  m=m+1
-    }
-  print(i)  
-}
-
-# get data frame to plot
-station=rep(1:(dim(Y1)[1]),each=2000)
-rmse=as.vector(RMSE[,1:(dim(Y1)[1])])
-iterss=rep(1:2000,(dim(Y1)[1]))
-
-RMSES=data.frame(station,rmse,iterss)
-RMSES$station=as.factor(RMSES$station)
-
-station=seq(1:(dim(Y1)[1]))
-cov=COV
-
-COV.pr=data.frame(COV,station)
-COV.pr$station=as.factor(COV.pr$station)
-
-
-#RMSE
-ggplot(RMSES)+geom_boxplot(aes(y=rmse,x=station))+theme_bw()
-ggplot(RMSES %>% filter(station%in%seq(1,40)))+geom_boxplot(aes(y=rmse,x=station))+theme_bw()
-ggplot(RMSES)+geom_histogram(aes(x=rmse))+theme_bw()
-ggplot(RMSES)+geom_boxplot(aes(y=rmse))+theme_bw()
-
-
-# COV pro
-ggplot(COV.pr)+geom_histogram(aes(x=cov),bins = 100)
-ggplot(COV.pr)+geom_boxplot(aes(y=cov))
-
