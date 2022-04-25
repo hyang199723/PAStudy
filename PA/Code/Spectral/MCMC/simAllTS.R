@@ -16,16 +16,20 @@ exp_corr=function(d,range)
   return(out)
 }
 
+
+# Constant correlation across all frequencies.
+# Get strong correlation first.
+
 ###### set some parameters ########
 
-n=c(300,200) # number of locations
+n=c(100,100) # number of locations
 
 nt=5 # total time steps
 
 tau1=1^2 # error variance1
 tau2=(1.5)^2  # error variance2
 set.seed(99)
-al=runif(nt,min=5,max=10)
+al=runif(nt,min = 5,max=6)
 
 # correlation parameters
 set.seed(88)
@@ -35,7 +39,7 @@ sigmav=seq(from=10,to=.1,length=10)+rtruncnorm(nt,a=0,sd=.2)
 # same range for all freq
 rangeu=0.15
 lrangeu=log(rangeu)
-rangev=0.2
+rangev=0.1
 lrangev=log(rangev)
 
 

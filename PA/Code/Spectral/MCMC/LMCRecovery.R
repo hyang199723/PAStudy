@@ -12,6 +12,10 @@ source('LMC_function.R')
 #simulate data
 source('simAllTS.R') # load your data here 
 
+
+Y11 = Y1.real[, 1]
+Y21 = Y2.real[, 1]
+cor(Y11, Y21)
 # names(out)=c('rangeU','rangeV','sigmaU','sigmaV','tau1','tau2','A','Y1.m','Y2.m','Y1p')
 
 # Real data are Y1.real and Y2.real
@@ -38,13 +42,13 @@ sigma1mean = colMeans(t(sigma11))
 sigma2mean = colMeans(t(sigma21))
 tau11 = tau1[, 1]
 tau21 = tau2[, 1]
-A = Al[, 1]
+A = Al[,, 1]
 
 # Actual v.s. recovery
-plot(1:10, range1)
+plot(1:3000, range1, 'l')
 abline(rangeu,0,col=2,lwd=2)
 
-plot(1:10, range1)
+plot(1:3000, range2, 'l')
 abline(rangev,0,col=2,lwd=2)
 
 plot(sigmau, sigma1mean)
