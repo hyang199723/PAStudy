@@ -12,7 +12,6 @@ source('LMC_function.R')
 #simulate data
 source('simAllTS.R') # load your data here 
 
-
 Y11 = Y1.real[, 1]
 Y21 = Y2.real[, 1]
 cor(Y11, Y21)
