@@ -39,6 +39,9 @@ keep.taue2 = matrix(0, iters,thin)
 # keep.v2= array(0,dim=c(n2,nt,iters))
 keep.Y1.M= array(0,dim=c(n1,nt,iters,thin))
 keep.Y2.M= array(0,dim=c(n2,nt,iters,thin))
+# Acceptance ratio
+count1 = 0
+count2 = 0
 
 
 
@@ -270,10 +273,11 @@ for(iter in 1:iters){
     canll = sum(dmvnorm(t(Ru), mean=rep(0,n1+n2),sigma=canM,log=TRUE))
     prior_canll=dnorm(canrange1,mean=priorR_mn1,sd=priorR_sd1,log=TRUE)
 
-    MH1 <- canll-curll+prior_canll-prior_curll+dnorm(canrange1,log=TRUE)-dnorm(lrangeU,log=TRUE)
-
+    MH1 <- canll-curll+prior_canll-prior_curll#+dnorm(canrange1,log=TRUE)-dnorm(lrangeU,log=TRUE)
+    
     if (log(runif(1))<MH1)
     {
+      count1 = count1 + 1
       lrangeU=canrange1
     }
 
@@ -289,10 +293,11 @@ for(iter in 1:iters){
     canll2 = sum(dmvnorm(t(Rv), mean = rep(0,n2),sigma=canS,log=TRUE ))
     prior_canll2=dnorm(canrange2,mean=priorR_mn2,sd=priorR_sd2,log=TRUE)
 
-    MH2 <- canll2-curll2+prior_canll2-prior_curll2+dnorm(canrange2,log=TRUE)-dnorm(lrangeV,log=TRUE)
-
+    MH2 <- canll2-curll2+prior_canll2-prior_curll2#+dnorm(canrange2,log=TRUE)-dnorm(lrangeV,log=TRUE)
+    
     if (log(runif(1))<MH2)
     {
+      count2 = count2 + 1
       lrangeV=canrange2
     }
     rangeU = exp(lrangeU)
@@ -370,10 +375,28 @@ for(iter in 1:iters){
 print(proc.time()[3] - start)
 
 #keep.Y1.P=keep.Y1.P[,,(burn:iters),]
-out=list(keep.rangeU,keep.rangeV,keep.sigmaU,keep.sigmaV,keep.taue1,keep.taue2,keep.A,keep.Y1.M,keep.Y2.M)
-names(out)=c('rangeU','rangeV','sigmaU','sigmaV','tau1','tau2','A','Y1.m','Y2.m')
+r1 = count1 / iters
+r2 = count2 / iters
+
+out=list(keep.rangeU,keep.rangeV,keep.sigmaU,keep.sigmaV,keep.taue1,keep.taue2,keep.A,keep.Y1.M,keep.Y2.M, r1, r2)
+names(out)=c('rangeU','rangeV','sigmaU','sigmaV','tau1','tau2','A','Y1.m','Y2.m', 'ratio1', 'ratio2')
 return(out)
 }
+
+
+
+
+
+
+
+
+
+###########################################################################
+###########################################################################
+###########################################################################
+###########################################################################
+###########################################################################
+###########################################################################
 
 
 
@@ -698,7 +721,7 @@ Compact.LMC_fit=function(Y1,Y2, s1,s2,
   }
   print(proc.time()[3] - start)
   }
-  
+  ratio1 = count1 / 
   out=list(keep.rangeU,keep.rangeV,keep.sigmaU,keep.sigmaV,keep.taue1,keep.taue2,keep.A,keep.Y1.M,keep.Y2.M)
   names(out)=c('rangeU','rangeV','sigmaU','sigmaV','tau1','tau2','A','Y1.m','Y2.m')
   return(out)

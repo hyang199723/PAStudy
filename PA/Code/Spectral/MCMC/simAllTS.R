@@ -22,9 +22,9 @@ exp_corr=function(d,range)
 
 ###### set some parameters ########
 
-n=c(100,100) # number of locations
+n=c(100, 100) # number of locations
 
-nt=5 # total time steps
+nt=100 # total time steps
 
 tau1=1^2 # error variance1
 tau2=(1.5)^2  # error variance2
@@ -33,9 +33,9 @@ al=runif(nt,min = 5,max=6)
 
 # correlation parameters
 set.seed(88)
-sigmau=seq(from=100,to=1,length=10)+rnorm(nt,sd=2)
+sigmau=seq(from=100,to=1,length=nt)+rnorm(nt,sd=2)
 set.seed(564)
-sigmav=seq(from=10,to=.1,length=10)+rtruncnorm(nt,a=0,sd=.2)
+sigmav=seq(from=10,to=.1,length=nt)+rtruncnorm(nt,a=0,sd=.2)
 # same range for all freq
 rangeu=0.15
 lrangeu=log(rangeu)

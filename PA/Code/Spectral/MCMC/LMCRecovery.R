@@ -19,7 +19,7 @@ cor(Y11, Y21)
 
 # Real data are Y1.real and Y2.real
 # Coordinates are coords1 and coords2
-iters = 3000
+iters = 6000
 burn=1000
 exit = LMC_fit(Y1=Y1.real,Y2=Y2.real, s1=coords1,s2=coords2,sp1=NULL,sp2=NULL,
                mean_range=0, sd_range=1, mean_var=0, sd_var=1, mean_rho=0,
@@ -35,29 +35,37 @@ Al = exit$A
 
 range11 = mean(range1)
 range21 = range2[, 1]
-sigma11 = sigma1[, , 1]
-sigma21 = sigma2[, , 1]
-sigma1mean = colMeans(t(sigma11))
-sigma2mean = colMeans(t(sigma21))
+sigma1 = sigma1[, , 1]
+sigma2 = sigma2[, , 1]
+
+# Get sigma for highest and lowest frequency
+sigma1_1 = sigma1[1, ]
+sigma1_2 = sigma1[nt, ]
+
+sigma2_1 = sigma2[1, ]
+sigma2_2 = sigma2[nt, ]
+
+
 tau11 = tau1[, 1]
 tau21 = tau2[, 1]
 A = Al[,, 1]
 
 # Actual v.s. recovery
-plot(1:3000, range1, 'l')
+plot(1:iters, range1, 'l', main = 'Range1')
 abline(rangeu,0,col=2,lwd=2)
 
-plot(1:3000, range2, 'l')
+plot(1:iters, range2, 'l', main = 'Range2')
 abline(rangev,0,col=2,lwd=2)
 
-plot(sigmau, sigma1mean)
-abline(0,1,col=2,lwd=2)
+plot(1:iters, sigma1_1, 'l', main = 'Sigma1, highest frequency')
+abline(sigmau[1], 0, col=2, lwd=2)
 
-plot(sigmav, sigma2mean)
-abline(0,1,col=2,lwd=2)
+plot(1:iters, sigma1_2, 'l', main = 'Sigma1, lowest frequency')
+abline(sigmau[nt], 0, col=2, lwd=2)
 
-plot(1:10, tau11)
-abline(tau1,0,col=2,lwd=2)
+plot(1:iters, sigma2_1, 'l', main = 'Sigma2, highest frequency')
+abline(sigmav[1], 0, col=2, lwd=2)
 
-plot(1:10, tau21)
-abline(tau2,1,col=2,lwd=2)
+plot(1:iters, sigma2_2, 'l', main = 'Sigma2, lowest frequency')
+abline(sigmav[nt], 0, col=2, lwd=2)
+
