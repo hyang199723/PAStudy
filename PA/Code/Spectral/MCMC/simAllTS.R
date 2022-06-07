@@ -22,22 +22,24 @@ exp_corr=function(d,range)
 
 ###### set some parameters ########
 
-n=c(100,100) # number of locations
+n=c(250,200) # number of locations
 
-nt=5 # total time steps
+nt=30 # total time steps11
 
-tau1=1^2 # error variance1
-tau2=(1.5)^2  # error variance2
+tau1=0.4^2 # error variance1
+tau2=(0.5)^2  # error variance2
 set.seed(99)
-al=runif(nt,min = 5,max=6)
+#al=runif(nt,min = 5,max=6)
+# Change al from uniform sequence to decreasing sequence
+al =(seq(from = 10, to = 1, length = nt) + rnorm(nt,sd=.1))/10
 
 # correlation parameters
 set.seed(88)
-sigmau=seq(from=100,to=1,length=10)+rnorm(nt,sd=2)
+sigmau=seq(from=10,to=1,length=nt)+rtruncnorm(nt,a=0,sd=.2)
 set.seed(564)
-sigmav=seq(from=10,to=.1,length=10)+rtruncnorm(nt,a=0,sd=.2)
+sigmav=seq(from=5,to=.1,length=nt)+rtruncnorm(nt,a=0,sd=.2)
 # same range for all freq
-rangeu=0.15
+rangeu=0.3
 lrangeu=log(rangeu)
 rangev=0.1
 lrangev=log(rangev)
@@ -87,9 +89,8 @@ Z2sp=matrix(NA,ncol=nt,nrow=n[2])
 
 for (t in 1:nt)
 {
-  Z1sp[,t]=u1[,t]#+rnorm(n[1],0,sqrt(nt*tau1))
-  Z2sp[,t]=al[t]*u2[,t]+v2[,t]#+rnorm(n[2],0,sqrt(nt*tau2))
-  
+  Z1sp[,t]=u1[,t] #+ rnorm(n[1],0,sqrt(nt/2*tau1))
+  Z2sp[,t]=al[t]*u2[,t]+v2[,t] #+ rnorm(n[2],0,sqrt(nt/2*tau2))
 }
 
 #time domain
@@ -120,18 +121,24 @@ if (F) {
 }
 
 
+##### Check correlation between Y1 and Y2
+al*sigmau/sqrt(sigmau*(al*al*sigmau + sigmav)) 
+
+
 
 ###### set data frame and plot #######
-
-time=rep(seq(1,nt),each=sum(n))
-type=rep(c(rep('1',n[1]),rep('2',n[2])),nt)
+time = c(rep(1:nt, each = n[1]), rep(1:nt, each = n[2]))
+#time=rep(seq(1,nt),each=sum(n))
+type=c(rep('1',n[1]*nt),rep('2',n[2]*nt))
 Y=c(as.vector(Y1),as.vector(Y2))
 Ys=c(as.vector(Z1sp),as.vector(Z2sp))
 U=c(as.vector(u1),as.vector(u2))
 V=c(rep(NA,n[1]*nt),as.vector(v2))
-s1=rep(c(coords1[,1],coords2[,1]),nt)
-s2=rep(c(coords1[,2],coords2[,2]),nt)
-site=rep(seq(1:sum(n)),nt)
+#s1=rep(c(coords1[,1],coords2[,1]),nt)
+#s2=rep(c(coords1[,2],coords2[,2]),nt)
+s1 = c(rep(coords1[, 1], nt), rep(coords2[, 1], nt))
+s2 = c(rep(coords1[, 2], nt), rep(coords2[, 2], nt))
+site=c(rep(seq(1:n[1]),nt), rep((1+n[1]):sum(n),nt))
 
 
 data=data.frame(time,type,Y,U,V,s1,s2,site, Ys)
@@ -145,24 +152,41 @@ ggplot(data %>% filter(time==1))+
   geom_point(aes(x=s1,y=s2,col=Y))+
   facet_grid(~type)+theme_bw()+coord_fixed(ratio = 1)+
   ggtitle('Y values, time 1')+scale_colour_gradient(low="#22FF00", high="#FF0000")
-
+# Zoom in Type 1 data
+ggplot(data %>% filter(time==1 & type == '1'))+
+  geom_point(aes(x=s1,y=s2,col=Y))+theme_bw()+coord_fixed(ratio = 1)+ 
+  ggtitle('Y values, time 4')+scale_colour_gradient(low="#22FF00", high="#FF0000")
+######
 ggplot(data %>% filter(time==2))+
   geom_point(aes(x=s1,y=s2,col=Y))+
   facet_grid(~type)+theme_bw()+coord_fixed(ratio = 1)+
   ggtitle('Y values, time 2')+scale_colour_gradient(low="#22FF00", high="#FF0000")
-
+# Zoom in Type 1 data
+ggplot(data %>% filter(time==2 & type == '1'))+
+  geom_point(aes(x=s1,y=s2,col=Y))+theme_bw()+coord_fixed(ratio = 1)+ 
+  ggtitle('Y values, time 4')+scale_colour_gradient(low="#22FF00", high="#FF0000")
+######
 ggplot(data %>% filter(time==3))+
   geom_point(aes(x=s1,y=s2,col=Y))+
   facet_grid(~type)+theme_bw()+coord_fixed(ratio = 1)+ 
   ggtitle('Y values, time 3')+scale_colour_gradient(low="#22FF00", high="#FF0000")
-
+# Zoom in Type 1 data
+ggplot(data %>% filter(time==3 & type == '1'))+
+  geom_point(aes(x=s1,y=s2,col=Y))+theme_bw()+coord_fixed(ratio = 1)+ 
+  ggtitle('Y values, time 4')+scale_colour_gradient(low="#22FF00", high="#FF0000")
+######
 ggplot(data %>% filter(time==4))+
   geom_point(aes(x=s1,y=s2,col=Y))+
   facet_grid(~type)+theme_bw()+coord_fixed(ratio = 1)+ 
   ggtitle('Y values, time 4')+scale_colour_gradient(low="#22FF00", high="#FF0000")
-
+# Zoom in
+ggplot(data %>% filter(time==4 & type == '1'))+
+  geom_point(aes(x=s1,y=s2,col=Y))+theme_bw()+coord_fixed(ratio = 1)+ 
+  ggtitle('Y values, time 4')+scale_colour_gradient(low="#22FF00", high="#FF0000")
 #temporal
 ggplot(data %>% filter(site %in%seq(1:20)))+geom_line(aes(x=time,y=Y))+facet_wrap(~site)+theme_bw()
+
+ggplot(data %>% filter(site %in%seq(1:20)))+geom_line(aes(x=time,y=Ys))+facet_wrap(~site)+theme_bw()
 
 # Plot U data
 ggplot(data %>% filter(time==1))+
@@ -186,3 +210,35 @@ ggplot(data %>% filter(time==2))+
   geom_point(aes(x=s1,y=s2,col=Ys))+
   facet_grid(~type)+theme_bw()+coord_fixed(ratio = 1) + ggtitle('Spectral Y values, time 2') +
   scale_colour_gradient(low="#22FF00", high="#FF0000")
+
+ggplot(data %>% filter(time==3))+
+  geom_point(aes(x=s1,y=s2,col=Ys))+
+  facet_grid(~type)+theme_bw()+coord_fixed(ratio = 1) + ggtitle('Spectral Y values, time 2') +
+  scale_colour_gradient(low="#22FF00", high="#FF0000")
+
+
+ggplot(data %>% filter(time==4))+
+  geom_point(aes(x=s1,y=s2,col=Ys))+
+  facet_grid(~type)+theme_bw()+coord_fixed(ratio = 1) + ggtitle('Spectral Y values, time 2') +
+  scale_colour_gradient(low="#22FF00", high="#FF0000")
+
+ggplot(data %>% filter(time==5))+
+  geom_point(aes(x=s1,y=s2,col=Ys))+
+  facet_grid(~type)+theme_bw()+coord_fixed(ratio = 1) + ggtitle('Spectral Y values, time 2') +
+  scale_colour_gradient(low="#22FF00", high="#FF0000")
+
+
+test = subset(data, site %in% seq(1,20))
+coord = test[, c('s1', 's2')]
+distance = as.matrix(dist(coord))
+distance = distance[1:20, 1:20]
+diag(distance) = 1
+min = min(distance)
+which(distance == min)
+
+
+
+site7 = subset(data, site == 7)
+
+
+
