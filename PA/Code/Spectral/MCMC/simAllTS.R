@@ -31,7 +31,7 @@ tau2=(0.5)^2  # error variance2
 set.seed(99)
 #al=runif(nt,min = 5,max=6)
 # Change al from uniform sequence to decreasing sequence
-al =(seq(from = 10, to = 1, length = nt) + rnorm(nt,sd=.1))/10
+al =seq(from = 10, to = 1, length = nt)/10
 
 # correlation parameters
 set.seed(88)
