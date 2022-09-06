@@ -435,7 +435,7 @@ LMC_fit=function(Y1,Y2, s1,s2,sp1=NULL,
         
         AA=Mp10%*%Mp00.inv
         a=Mp10%*%Mp00.inv%*%t(Mp10)
-        a=round(a,digits=7) # to avoid numercial underflow
+        #a=round(a,digits=7) # to avoid numercial underflow
         B=Mp11-a
         
         Uls=rbind(U1,U2)  
@@ -474,13 +474,13 @@ lmcYtrain = Y1_train
 lmcY2 = Y2
 lmcYtest = Y1_test
 # If the simulation data is not from LMC model, detrend
-if (notLMC) {
-  for (i in 1:ts) {
-    lmcYtrain[, i] = lmcYtrain[, i] - mean(lmcYtrain[, i])
-    lmcY2[, i] = lmcY2[, i] - mean(lmcY2[, i])
-    lmcYtest[, i] = lmcYtest[, i] - mean(lmcYtest[, i])
-  }
+
+for (i in 1:ts) {
+  lmcYtrain[, i] = lmcYtrain[, i] - mean(lmcYtrain[, i])
+  lmcY2[, i] = lmcY2[, i] - mean(lmcY2[, i])
+  lmcYtest[, i] = lmcYtest[, i] - mean(lmcYtest[, i])
 }
+
 start1=proc.time()[3]
 fit = LMC_fit(lmcYtrain, lmcY2, coords1_train, coords2, sp1 = coords1_test, 
               iters = iters, thin = 1)

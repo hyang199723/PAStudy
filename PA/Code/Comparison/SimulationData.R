@@ -19,13 +19,14 @@ rm(list = ls())
 set.seed(123)
 a1 = 100
 a2 = 70
-n=c(a1,a2) # number of locations
-ts = 10
+# number of locations
+n=c(a1,a2)
+ts = 15
 # Randomly select 100 testing locations
 vld = rbinom(a1, 1, 0.302)
 nt=ts # total time steps
 # Error variance
-sig2eps=5^2
+sig2eps=3^2
 eps = matrix(rnorm(sum(n) * ts, 0, sqrt(sig2eps)), nrow = sum(n), ncol = ts)
 # Spatial
 range1=2
@@ -46,7 +47,7 @@ lat = c(coords1[, 2], coords2[ ,2])
 lon2 = lon^2; lat2 = lat^2; lonlat = lon * lat
 idct = c(rep(0, a1), rep(1, a2))
 X = cbind(rep(1, sum(n)), lon, lat, lon2, lat2, lonlat, idct)
-sig2eta = 10^2
+sig2eta = 5^2
 set.seed(123)
 beta = rnorm(7, 1, 2) / 100
 beta[7] = sqrt(sig2eta) / 2
@@ -93,5 +94,5 @@ v = rep(0, ts)
 for (i in 1:ts) {
   v[i] = var(Y[, i])
 }
-plot(v)
+plot(v, main = "AR(1) generated variance")
 
