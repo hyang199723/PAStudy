@@ -423,7 +423,7 @@ LMC_fit=function(Y1,Y2, s1,s2,sp1=NULL,
         {
           Au=AA%*%Uls[,r] 
           sigmaB=sigmaU[r]*B
-          print(sigmaB)
+
           Ul.pred=rmvnorm(1,mean=Au,sigma=sigmaB)
           
           U1p[,r]=Ul.pred[(1:np1)]

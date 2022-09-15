@@ -8,3 +8,5 @@
 .DS_Store
 PA/.Rhistory
 PA/Code/Computing
+# Ignore all txt files
+.txt
