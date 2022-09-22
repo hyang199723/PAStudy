@@ -12,3 +12,4 @@ PA/Code/Computing
 */.txt
 # Ignore all RData
 */.RData
+*/.csv
