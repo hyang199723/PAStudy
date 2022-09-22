@@ -9,4 +9,6 @@
 PA/.Rhistory
 PA/Code/Computing
 # Ignore all txt files
-.txt
+*/.txt
+# Ignore all RData
+*/.RData
