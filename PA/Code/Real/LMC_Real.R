@@ -476,6 +476,6 @@ LMC_fit=function(Y1,Y2, s1,s2,sp1=NULL,
   out=list(keep.rangeU,keep.rangeV,keep.sigmaU,keep.sigmaV,keep.taue1,keep.taue2,keep.A,
            aru,arv,keep.Y1.P,Mu1,Mu2,Mv,Vu1,Vu2,Vv2,McorY1Y2,VcorY1Y2)
   names(out)=c('rangeU','rangeV','sigmaU','sigmaV','tau1','tau2','A','aru','arv','Y1.p','MeanU1',
-               'MeanU2','MeanV2','VarU1','VarU2','VarU2','MeanCorrY1Y2','VarCorrY1Y2')
+               'MeanU2','MeanV2','VarU1','VarU2','VarV2','MeanCorrY1Y2','VarCorrY1Y2')
   return(out)
 }
