@@ -1,5 +1,5 @@
 # All LMC functions
-# Last updated: 06/27/2022
+# Last updated: 09/23/2022
 library(tidyverse)
 library(spBayes)
 library(ggplot2)
@@ -7,7 +7,7 @@ library(mgcv)
 library(MASS)
 library(mvtnorm)
 library(truncnorm)
-library(viridis)
+
 
 exp_corr=function(d,range)
 {
@@ -132,8 +132,19 @@ LMC_fit=function(Y1,Y2, s1,s2,sp1=NULL,
   #keep.Y1.M= array(0,dim=c(n1,nt,iters,thin))
   #keep.Y2.M= array(0,dim=c(n2,nt,iters,thin))
   
-  ## get info for the ranges priors 
+  # Save Mean and Variance of U and V 
+  E.u1=matrix(0,ncol=nt,nrow=n1)
+  E.u2=matrix(0,ncol=nt,nrow=n2)
+  E.v=matrix(0,ncol=nt,nrow=n2)
+
+  E2.u1=matrix(0,ncol=nt,nrow=n1)
+  E2.u2=matrix(0,ncol=nt,nrow=n2)
+  E2.v=matrix(0,ncol=nt,nrow=n2)
   
+  E.corrY1Y2=numeric(nt)
+  E2.corrY1Y2=numeric(nt)
+  
+  ## get info for the ranges priors 
   priorR_mn1 <- log(max(d)) - 1.5
   priorR_sd1 <- .5
   
@@ -406,7 +417,6 @@ LMC_fit=function(Y1,Y2, s1,s2,sp1=NULL,
         Mp10=Mp[(n1+n2+1):(n1+n2+np1),1:(n1+n2)]
         Mp01=t(Mp10)
         
-        
         E00=eigen(Mp00)
         E00.G=E00$vectors
         E00.D=E00$values
@@ -433,14 +443,39 @@ LMC_fit=function(Y1,Y2, s1,s2,sp1=NULL,
         for(i in 1:np1){Z1p[i,] <- fft_real(U1p[i,],inverse=TRUE)}
         Y1.pred <- beta1+Z1p+rnorm(n=nt,sd=sqrt(taue1)) #beta1?
         keep.Y1.P[,,iter,ttt]=as.matrix(Y1.pred)
-      }
       
+        # Save Mean and Variance
+        E.u1=E.u1+U1/(iters-burn)
+        E.u2=E.u2+U2/(iters-burn)
+        E.v=E.v+V2/(iters-burn)
+        
+        E2.u1=E2.u1+U1*U1/(iters-burn)
+        E2.u2=E2.u2+U2*U2/(iters-burn)
+        E2.v=E2.v+V2*V2/(iters-burn)
+        
+        # corr Y1 and Y2
+        cory1y2=A*sigmaU/sqrt((sigmaU+taus1)*(A*sigmaU+sigmaV+taus2))
+        E.corrY1Y2=E.corrY1Y2+cory1y2/(iters-burn)
+        E2.corrY1Y2=E2.corrY1Y2+cory1y2*cory1y2/(iters-burn)
+        
+      }
     } # End of thin
   }
+  Mu1=E.u1
+  Mu2=E.u2
+  Mv=E.v
+  
+  Vu1=E2.u1-E.u1*E.u1
+  Vu2=E2.u2-E.u2*E.u2
+  Vv2=E2.v-E.v*E.v
+  
+  McorY1Y2=E.corrY1Y2
+  VcorY1Y2=E2.corrY1Y2-E.corrY1Y2*E.corrY1Y2
   
   keep.Y1.P=keep.Y1.P[,,(burn:iters),]
   out=list(keep.rangeU,keep.rangeV,keep.sigmaU,keep.sigmaV,keep.taue1,keep.taue2,keep.A,
-           aru,arv,keep.Y1.P)
-  names(out)=c('rangeU','rangeV','sigmaU','sigmaV','tau1','tau2','A','aru','arv','Y1.p')
+           aru,arv,keep.Y1.P,Mu1,Mu2,Mv,Vu1,Vu2,Vv2,McorY1Y2,VcorY1Y2)
+  names(out)=c('rangeU','rangeV','sigmaU','sigmaV','tau1','tau2','A','aru','arv','Y1.p','MeanU1',
+               'MeanU2','MeanV2','VarU1','VarU2','VarU2','MeanCorrY1Y2','VarCorrY1Y2')
   return(out)
 }
