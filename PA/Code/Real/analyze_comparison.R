@@ -1,15 +1,13 @@
-rm(list = ls())
-setwd("/Users/hongjianyang/Research/PAStudy/PA/Code/Real/")
 library(truncnorm)
 library(mvtnorm)
 library(spTimer)
 library(tidyverse)
 
-source('LMC.R') # last version here
-
 ##### Analysis Real data
 
-load("real_init.RData")
+#source( "./Real_data/process_real_data.R")
+load("./Real_data/all_reail_init.RData")
+source('./Real_data/LMC_Real.R') # last version here
 
 ts=length(unique(all.dataF$Timestamp))
 n1=length(sites.epa)  
@@ -19,8 +17,8 @@ n2=length(sites.pa)
 
 K.fold=5
 k.tots=round(n1/K.fold)
-iters = 5000
-burn=1000
+iters = 400
+burn=50
 
 values=rep(NA,k.tots*4*4)
 model=rep(c('lmc', 'mean', 'twos', 'spTimer'),k.tots*4)
@@ -29,7 +27,8 @@ k.index=rep(rep(1:k.tots,each=4),4)
 
 df1=data.frame(values,model,index,k.index)
 
-k=1
+for (k in 1:k.tots)
+{
 # Define train and test set for each k
 
 epa.test=((k-1)*K.fold+1):(K.fold*k)
@@ -63,6 +62,7 @@ for (i in 1:ts) {
 start1=proc.time()[3]
 fit = LMC_fit(Y1.train, Y2, coords.train, coords2, sp1 = coords.test,
               iters = iters, thin = 1)
+
 t1 = proc.time()[3] - start1
 
 # Measure error
@@ -91,7 +91,7 @@ pred1 = Matrix::rowMeans(pred, dims = 2)  # Reduce 3-D pred to 2-D
 mse1 = 0
 for (i in 1:ts) {
   if(sum(!is.na(Y1.test[,i]))>0)
-   {mse1 = mse1 + sum((pred1[, i] - Y1.test[, i])^2,na.rm = TRUE) / sum(!is.na(Y1.test[,i]))-1 #N-1
+   {mse1 = mse1 + sum((pred1[, i] - Y1.test[, i])^2,na.rm = TRUE) / sum(!is.na(Y1.test[,i])) #N
 }}
 mse1 = mse1 / ts
 
@@ -126,6 +126,7 @@ df1=df1 %>%
 
 rm(fit, pred1,lmcYtrain,lmcYtest,lmcY2,pred,mse1,prob1,sumV1,avgV1,t1)
 gc()
+print('lmc')
 ###################### 2.Mean-adjusting algorithm #######################
 
 cover2 = 0
@@ -192,7 +193,7 @@ for (i in 1:ts) {
   cover2 = cover2 + sum(y.test2 > low[!which.NA.test] & y.test2 < high[!which.NA.test])
   
   # MSE
-  mse2 = mse2 + (sum((Yhat[!which.NA.test] - y.test2)^2) / length(y.test2)-1)
+  mse2 = mse2 + (sum((Yhat[!which.NA.test] - y.test2)^2) / length(y.test2))
   
   for (l in 1:length(y.test2))
   {
@@ -229,7 +230,7 @@ df1=df1 %>%
   as.data.frame()
 
 rm(mse2,prob2,avgV2,t2)
-
+print('mean')
 
 ######################## 3.Two-stage algorithm #######################
 
@@ -330,7 +331,7 @@ for (i in 1:ts) {
   cover3 = cover3 + sum(y1.test.obsF > low[!which.NA.test] & y1.test.obsF < high[!which.NA.test])
   
   # MSE
-  mse3 = mse3 + (sum((Yhat[!which.NA.test] - y1.test.obsF)^2) / length(y1.test.obsF)-1)
+  mse3 = mse3 + (sum((Yhat[!which.NA.test] - y1.test.obsF)^2) / length(y1.test.obsF))
   
   # Variance
   for (l in 1:length(y1.test.obsF))
@@ -366,7 +367,7 @@ df1=df1 %>%
   as.data.frame()
 
 rm(mse3,prob3,avgV3,t3)
-
+print('twos')
 ######################## 4.spTimer, GP model #######################
 
 
@@ -431,10 +432,16 @@ cover4 = sum(y.test[nonas] > low[nonas] & y.test[nonas] < high[nonas]) / (K.fold
 mse4=0
 N = K.fold * ts
 for (i in 1:ts) {
-  obs = mean[seq(i, N, ts)]
-  truth = y.test[seq(i, N, ts)]
+  q=seq((i-1)*K.fold+1,i*K.fold)
+  obs = mean[q]
+  truth = y.test[q]
+  # obs = mean[seq(i, N, ts)]
+  # truth = y.test[seq(i, N, ts)]
   nonas=!is.na(truth)
-  mse4 = mse4 + sum((obs[nonas] - truth[nonas])^2) / (length(truth[nonas])-1)
+  mse4 = mse4 + sum((obs[nonas] - truth[nonas])^2) / (length(truth[nonas]))
+  print(i)
+  print(mse4)
+  
 }
 mse4 = mse4 / ts
 
@@ -454,7 +461,7 @@ df1=df1 %>%
   as.data.frame()
 
 df1=df1 %>%
-  mutate(values=replace(values, model=='spTimer' & index=='ConverageProbability' & k.index==k, prob4)) %>%
+  mutate(values=replace(values, model=='spTimer' & index=='ConverageProbability' & k.index==k, cover4)) %>%
   as.data.frame()
 
 df1=df1 %>%
@@ -466,13 +473,13 @@ df1=df1 %>%
   as.data.frame()
 
 
-rm(pp,mean,sd,preds,spt,t4,avgV4,prob4,mse4)
+rm(pp,mean,sd,preds,spt,t4,avgV4,cover4,mse4)
 gc()
 
-
+print('sptimer')
 print(k)
 
-
+}
 
 
 #### Plots
