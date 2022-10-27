@@ -1,6 +1,6 @@
-rm(list  = ls())
-setwd("/Users/hongjianyang/Research/PAStudy/PA/Code/Comparison/")
-source('LMC.R')
+# rm(list  = ls())
+# setwd("/Users/hongjianyang/Research/PAStudy/PA/Code/Simulation/")
+source('LMC_Sim.R')
 #### simulation of the time series process
 library(tidyverse)
 library(spBayes)
@@ -18,7 +18,6 @@ exp_corr=function(d,range)
   return(out)
 }
 
-
 # Constant correlation across all frequencies.
 # Get strong correlation first.
 
@@ -26,13 +25,14 @@ exp_corr=function(d,range)
 set.seed(123)
 # 350 + 100 Type1 and Type2 data
 # 250 Type1 for training, 10 for testing
-a1 = 100
-a2 = 70
+a1 = 80
+a2 = 300
 n=c(a1,a2) # number of locations
 # Randomly select 100 testing locations
 vld = rbinom(a1, 1, 0.302)
 
-nt=15 # total time steps
+nt=91 # total time steps
+ntot=nt*(a1+a2)
 
 tau1=6^2 # error variance1
 tau2=8^2  # error variance2
@@ -40,7 +40,7 @@ set.seed(99)
 #al=runif(nt,min = 5,max=6)
 # Change al from uniform sequence to decreasing sequence
 # from 10 - 1 / 10
-al = seq(from = 0, to = 0, length = t) / 25 # /10: 20% - 80%;  /3: 40% - 98%; /25: 5% - 47%
+al = seq(from = 0, to = 0, length = nt) / 25 # /10: 20% - 80%;  /3: 40% - 98%; /25: 5% - 47%
 
 # correlation parameters
 set.seed(88)
@@ -53,8 +53,6 @@ lrangeu=log(rangeu)
 rangev=2
 lrangev=log(rangev)
 
-
-
 ###### simulate coordinates #######
 
 set.seed(1)
@@ -64,21 +62,40 @@ set.seed(28)
 coords2 = cbind(runif(n[2],0,leng), runif(n[2],0,leng))
 coords=rbind(coords1,coords2)
 
-## mean
-lon1 = coords1[, 1]; lat1 = coords1[, 2]
-lon1s = lon1 * lon1; lat1s = lat1 * lat1; lonlat1 = lon1 * lat1
-X1 = cbind(rep(1, a1), lon1, lat1, lon1s, lat1s, lonlat1, rep(0, a1))
+## Mean: create covariates
+X=array(NA,dim=c(a1+a2,nt,6))
+X[,,1]=matrix(rep(1,ntot),ncol = nt)
+X[,,2]=matrix(rnorm(ntot,mean=47,sd=sqrt(316)),ncol = nt)
+X[,,3]=matrix(rnorm(ntot,mean=66,sd=sqrt(684)),ncol = nt)
+X[,,4]=matrix(rbinom(ntot,size=1,prob=.4),ncol = nt)
+X[,,5]=matrix(rbinom(ntot,size=1,prob=.3),ncol = nt)
+X[,,6]=matrix(rbinom(ntot,size=1,prob=.1),ncol = nt)
 
-lon2 = coords2[, 1]; lat2 = coords2[, 2]
-lon2s = lon2 * lon2; lat2s = lat2 * lat2; lonlat2 = lon2 * lat2
-X2 = cbind(rep(1, a2), lon2, lat2, lon2s, lat2s, lonlat2, rep(1, a2))
+X1=X[1:a1,,]
+X2=X[(a1+1):(a1+a2),,]
 
 set.seed(123)
-beta = rnorm(7, 1, 2) / 100
-beta[7] = sqrt(tau1) / 2
+betau = rnorm(6, 1, 2) / 100
+betav = rnorm(6, .5, 2) / 100
+#beta[7] = sqrt(tau1) / 2
 
-beta.1 = X1 %*% beta
-beta.2 = X2 %*% beta
+# #X\beta
+Xbu=array(NA,dim=c(a1+a2,nt,6))
+Xbv=array(NA,dim=c(a2,nt,6))
+
+for (i in 1:6)
+{
+  Xbu[,,i]=X[,,i]*betau[i]
+  Xbv[,,i]=X2[,,i]*betav[i]
+}
+
+# Get DFT
+Xbeta.uT=array(NA,dim=c(a1+a2,nt,6))
+Xbeta.vT=array(NA,dim=c(a2,nt,6))
+
+for (i in 1:6)
+{Xbeta.uT[,,i]=t(apply(Xbu[,,i],1,fft_real))
+Xbeta.vT[,,i]=t(apply(Xbv[,,i],1,fft_real))}
 
 ######## Get U and V ##########
 
@@ -97,12 +114,12 @@ for (t in 1:nt)
   #u
   #M=exp_corr(du12,range=rangeu[t])
   u[,t]=t(chol(M))%*%rnorm(sum(n),0,sqrt(sigmau[t]))
-  u1[,t]=u[(1:n[1]),t]
-  u2[,t]=u[(n[1]+1):(sum(n)),t]
+  u1[,t]=u[(1:n[1]),t]+apply(Xbeta.uT[(1:a1),t,],1,sum)
+  u2[,t]=u[(n[1]+1):(sum(n)),t]+apply(Xbeta.uT[(a1+1):(a1+a2),t,],1,sum)
   
   #v
   #Sigmav22=exp_corr(dv2,range = rangev[t])
-  v2[,t]=t(chol(Sigmav22))%*%rnorm(n[2],0,sqrt(sigmav[t]))
+  v2[,t]=t(chol(Sigmav22))%*%rnorm(n[2],0,sqrt(sigmav[t]))+apply(Xbeta.vT[,t,],1,sum)
   
 }
 
@@ -121,8 +138,8 @@ for (t in 1:nt)
 #time domain
 Y1=matrix(NA,ncol=nt,nrow=n[1])
 Y2=matrix(NA,ncol=nt,nrow=n[2])
-for(i in 1:n[1]){Y1[i,] <- fft_real(Z1sp[i,],inverse=TRUE)+beta.1[i]+rnorm(nt,0,sqrt(tau1))}
-for(i in 1:n[2]){Y2[i,] <- fft_real(Z2sp[i,],inverse=TRUE)+beta.2[i]+rnorm(nt,0,sqrt(tau2))}
+for(i in 1:n[1]){Y1[i,] <- fft_real(Z1sp[i,],inverse=TRUE)+rnorm(nt,0,sqrt(tau1))}
+for(i in 1:n[2]){Y2[i,] <- fft_real(Z2sp[i,],inverse=TRUE)+rnorm(nt,0,sqrt(tau2))}
 
 Y1_sum = cbind(Y1, vld)
 Y1_train = subset(Y1, vld == 0)
@@ -147,3 +164,23 @@ for (i in 1:nt) {
   v1[i] = var(Y[, i])
 }
 plot(v1, main = "Variance of LMC generated data")
+
+
+## Some plots
+
+valuesY=c(as.vector(Y1),Y1=as.vector(Y2))
+type=c(rep('Type1',length(Y1)),rep('Type2',length(Y2)))
+xcord=c(rep(coords1[,1],nt),rep(coords2[,1],nt))
+ycord=c(rep(coords1[,2],nt),rep(coords2[,2],nt))
+times=c(rep(seq(1,nt),each=a1),rep(seq(1,nt),each=a2))
+
+df=data.frame(valuesY,type,xcord,ycord,times)
+
+
+ggplot(df %>% filter(times==1))+geom_point(aes(x=xcord,y=ycord,col=valuesY))+
+  theme_bw()+facet_grid(~type)
+
+ggplot(df %>% filter(times==4))+geom_point(aes(x=xcord,y=ycord,col=valuesY))+
+  theme_bw()+facet_grid(~type)
+
+
